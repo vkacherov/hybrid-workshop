@@ -1,4 +1,4 @@
-# Deploying Multi-OS applications with Docker EE
+# Deploying Multi-OS applications with Docker EE 
 
 > **Difficulty**: Intermediate (assumes basic familiarity with Docker)
 
