@@ -47,6 +47,41 @@ In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. 
 
     ![](./images/windows75.png)
 
+## <a name="task0"></a>Task 0: Setup the lab environment
+
+Before we can dive into deploying containres, we need to provision a Docker EE environment to run containers. This involves signing up for a Docker EE Trial License and provisioning the required Azure Infrastructure.
+
+### <a name="task 0.1"></a>Task 0.1: Sign up for a free 30-day Docker EE Trial License
+
+Let's first register for a Docker ID account, which we will use to generate a trial license.
+
+1. Navigate in your web browser to [the Docker Store](https://store.docker.com).
+
+	![](./images/docker_store.png)
+
+1. In the to pright corner, click `Log In`. On the Log In screen, select `Create Account` and complete the new account process.
+
+1. Verify your email address by clicking the verification link in the email sent by Docker Store. 
+
+1. Login into the Docker Store, navigate to [Docker Enterprise Edition Trial](https://store.docker.com/editions/enterprise/docker-ee-trial), and select `Start 1 Month Trial`. 
+
+	![](./images/docker_trial.png)
+
+1. Complete the form and click `Start your evaluation`. You will be taken to the Setup Instructions screen. 
+
+	Note that URL at the bottom of the `Resources` column; it is labeled "Copy and pase this URL to download your Edition" and is structured as `https://storebits.docker.com/ee/trial/sub-00000000-0000-0000-0000-000000000000`. This URL is your specific Docker EE Trial License Key and will be used when we provision Azure resources.
+
+	Also under the `Resources` section, click `License Key` to download a .lic file. 
+
+### <a name="task 0.2"></a>Task 0.2: Deploy Docker EE cluster to Azure
+
+1. Right-click the follow `Deploy to Azure` button and open the hyperlink in a new browser tab:
+
+	<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2F101-databricks-workspace%2Fazuredeploy.json" rel="nofollow">
+			<img src="https://camo.githubusercontent.com/9285dd3998997a0835869065bb15e5d500475034/687474703a2f2f617a7572656465706c6f792e6e65742f6465706c6f79627574746f6e2e706e67" data-canonical-src="http://azuredeploy.net/deploybutton.png" style="max-width:100%;">
+	</a>
+
+
 ## <a name="task1"></a>Task 1: Configure the Docker EE Cluster
 
 The Play with Docker (PWD) environment is almost completely set up, but before we can begin the labs, we need to do two more steps. First we'll add a Windows node to the cluster, and then we'll create two repositories on the DTR server.
