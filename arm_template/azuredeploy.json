@@ -705,7 +705,7 @@
         "osProfile": {
           "computerName": "manager01",
           "adminUsername": "eeadmin",
-          "adminPassword": "Docker123!"
+          "adminPassword": "DockerEE123!"
         },
         "networkProfile": {
           "networkInterfaces": [{
@@ -778,7 +778,7 @@
         "osProfile": {
           "computerName": "[concat('manager', padLeft(copyIndex(2), 2, '0'))]",
           "adminUsername": "eeadmin",
-          "adminPassword": "Docker123!"
+          "adminPassword": "DockerEE123!"
         },
         "networkProfile": {
           "networkInterfaces": [{
@@ -848,7 +848,7 @@
         "osProfile": {
           "computerName": "dtr01",
           "adminUsername": "eeadmin",
-          "adminPassword": "Docker123!"
+          "adminPassword": "DockerEE123!"
         },
         "networkProfile": {
           "networkInterfaces": [{
@@ -923,7 +923,7 @@
         "osProfile": {
           "computerName": "[concat('dtr', padLeft(copyIndex(2), 2, '0'))]",
           "adminUsername": "eeadmin",
-          "adminPassword": "Docker123!"
+          "adminPassword": "DockerEE123!"
         },
         "networkProfile": {
           "networkInterfaces": [{
@@ -998,7 +998,7 @@
         "osProfile": {
           "computerName": "[concat('worker-linux-', padLeft(copyIndex(1), 2, '0'))]",
           "adminUsername": "eeadmin",
-          "adminPassword": "Docker123!"
+          "adminPassword": "DockerEE123!"
         },
         "networkProfile": {
           "networkInterfaces": [{
