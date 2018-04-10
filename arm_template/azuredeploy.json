@@ -19,9 +19,9 @@
     "scripts": {
       "type": "object",
       "defaultValue": {
-        "installDockerEE": "https://raw.githubusercontent.com/Microsoft/Docker-EE-on-Azure-Stack-Deployment/master/multi-node/install-docker-ee.sh",
-        "installUCP": "https://raw.githubusercontent.com/Microsoft/Docker-EE-on-Azure-Stack-Deployment/master/multi-node/install-ucp.sh",
-        "installDTR": "https://raw.githubusercontent.com/Microsoft/Docker-EE-on-Azure-Stack-Deployment/master/multi-node/install-dtr.sh"
+        "installDockerEE": "https://raw.githubusercontent.com/stevenfollis/hybrid-workshop/master/arm_template/install-docker-ee.sh",
+        "installUCP": "https://raw.githubusercontent.com/stevenfollis/hybrid-workshop/master/arm_template/install-ucp.sheployment/master/multi-node/install-ucp.sh",
+        "installDTR": "https://raw.githubusercontent.com/stevenfollis/hybrid-workshop/master/arm_template/install-dtr.sh"
       }
     }
   },

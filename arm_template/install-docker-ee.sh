@@ -6,7 +6,7 @@
 readonly DOCKER_EE_URL=$1
 
 # Repository name for Docker EE Engine
-readonly DOCKER_EE_VERSION="test"
+readonly DOCKER_EE_VERSION="stable-17.06"
 
 installEngine() {
 

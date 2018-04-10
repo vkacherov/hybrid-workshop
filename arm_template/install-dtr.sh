@@ -12,11 +12,11 @@ readonly DTR_FQDN=$2
 readonly UCP_NODE=$(cat /etc/hostname)
 
 # Version of DTR to be installed
-readonly DTR_VERSION="2.5.0-beta3"
+readonly DTR_VERSION="latest"
 
 # UCP Admin credentials
 readonly UCP_USERNAME="admin"
-readonly UCP_PASSWORD='Docker123!'
+readonly UCP_PASSWORD='DockerEE123!'
 
 checkDTR() {
 

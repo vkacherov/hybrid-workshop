@@ -15,11 +15,11 @@ readonly NODE_ROLE=$3
 readonly NODE_NAME=$(cat /etc/hostname)
 
 # Version of UCP to be installed
-readonly UCP_VERSION="3.0.0-beta3"
+readonly UCP_VERSION="latest"
 
 # UCP Administrator Credentials
 readonly UCP_ADMIN="admin"
-readonly UCP_PASSWORD="Docker123!"
+readonly UCP_PASSWORD="DockerEE123!"
 
 # Install jq library for parsing JSON
 sudo apt-get -qq install jq -y
