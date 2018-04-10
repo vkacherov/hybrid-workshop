@@ -4,56 +4,34 @@ Docker EE 17.06 is the first Containers-as-a-Service platform to offer productio
 
 In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. We'll deploy both a Linux and Windows web app, as well as a multi-service application that includes both Windows and Linux components. We will then look at scaling up your web app, as well how Docker EE handles system interruptions and upgrades.
 
-> **Difficulty**: Intermediate (assumes basic familiarity with Docker)
+**Difficulty**: Intermediate (assumes basic familiarity with Docker)
 
-> **Time**: Approximately 75 minutes
+**Time**: Approximately 75 minutes
 
-> **Tasks**:
->
-> * [Task 1: Configure the Docker EE Cluster](#task1)
->   * [Task 1.1: Accessing PWD](#task1.1)
->   * [Task 1.2: Install a Windows worker node](#task1.2)
->   * [Task 1.3: Create Two Repositories](#task1.3)
-> * [Task 2: Deploy a Linux Web App](#task2)
->   * [Task 2.1: Clone the Demo Repo](#task2.1)
->   * [Task 2.2: Build and Push the Linux Web App Image](#task2.2)
->   * [Task 2.3: Deploy the Web App using UCP](#task2.3)
-> * [Task 3: Deploy a Windows Web App](#task3)
->   * [Task 3.1: Create the Dockerfile with Image2Docker](#task3.1)
->   * [Task 3.2: Build and Push Your Image to Docker Trusted Registry](#task3.2)
->   * [Task 3.3: Deploy the Windows Web App](#task3.3)
-> * [Task 4: Deploy a Multi-OS Application](#task4)
->   * [Task 4.1: Examine the Docker Compose File](#task4.1)
->   * [Task 4.2: Deploy the Application Stack](#task4.2)
->   * [Task 4.3: Verify the Running Application](#task4.3)
-> * [Task 5: Application Lifecycle Management](#task5)
->   * [Task 5.1: Upgrading the Web Front-end](#task5.1)
->   * [Task 5.2: Scaling the Web Front-end](#task5.2)
->   * [Task 5.3: Dealing with an Application Failure](#task5.3)
-
-## Understanding the Play With Docker Interface
-
-![](./images/pwd_screen.png)
-
-There are three main components to the Play With Docker (PWD) interface
-
-### 1. Console Access
-Play with Docker provides access to the 3 Docker EE hosts in your Cluster. These machines are:
-
-* A Linux-based Docker EE 17.06 Manager node
-* A Linux-based Docker EE 17.06 Worker node
-* A Windows Server 2016-based Docker EE 17.06 Worker Node
-
-By clicking a name on the left, the console window will be connected to that node.
-
-### 2. Access to your Universal Control Plane (UCP) and Docker Trusted Registry (DTR) servers
-
-Additionally, the PWD screen provides you with a one-click access to the Universal Control Plane (UCP)
-web-based management interface as well as the Docker Trusted Registry (DTR) web-based management interface. Clicking on either the `UCP` or `DTR` button will bring up the respective server web interface in a new tab.
-
-### 3. Session Information
-
-Throughout the lab you will be asked to provide either hostnames or login credentials that are unique to your environment. These are displayed for you at the bottom of the screen.
+**Tasks**:
+* [Task 0: Setup the lab environment](#task0)
+	* [Task 0.1: Sign up for a free 30-day Docker EE Trial License](#task0.1)
+	* [Task 0.2: Deploy Docker EE cluster to Azure](#task0.2)
+* [Task 1: Configure the Docker EE Cluster](#task1)
+  * [Task 1.1: Accessing PWD](#task1.1)
+  * [Task 1.2: Install a Windows worker node](#task1.2)
+  * [Task 1.3: Create Two Repositories](#task1.3)
+* [Task 2: Deploy a Linux Web App](#task2)
+  * [Task 2.1: Clone the Demo Repo](#task2.1)
+  * [Task 2.2: Build and Push the Linux Web App Image](#task2.2)
+  * [Task 2.3: Deploy the Web App using UCP](#task2.3)
+* [Task 3: Deploy a Windows Web App](#task3)
+  * [Task 3.1: Create the Dockerfile with Image2Docker](#task3.1)
+  * [Task 3.2: Build and Push Your Image to Docker Trusted Registry](#task3.2)
+  * [Task 3.3: Deploy the Windows Web App](#task3.3)
+* [Task 4: Deploy a Multi-OS Application](#task4)
+  * [Task 4.1: Examine the Docker Compose File](#task4.1)
+  * [Task 4.2: Deploy the Application Stack](#task4.2)
+  * [Task 4.3: Verify the Running Application](#task4.3)
+* [Task 5: Application Lifecycle Management](#task5)
+  * [Task 5.1: Upgrading the Web Front-end](#task5.1)
+  * [Task 5.2: Scaling the Web Front-end](#task5.2)
+  * [Task 5.3: Dealing with an Application Failure](#task5.3)
 
 ## Document conventions
 
