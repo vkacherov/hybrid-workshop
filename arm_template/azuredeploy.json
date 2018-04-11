@@ -21,7 +21,9 @@
       "defaultValue": {
         "installDockerEE": "https://raw.githubusercontent.com/stevenfollis/hybrid-workshop/master/arm_template/install-docker-ee.sh",
         "installUCP": "https://raw.githubusercontent.com/stevenfollis/hybrid-workshop/master/arm_template/install-ucp.sh",
+        "installUCPPowershell": "https://raw.githubusercontent.com/stevenfollis/hybrid-workshop/master/arm_template/install-ucp.ps1",
         "installDTR": "https://raw.githubusercontent.com/stevenfollis/hybrid-workshop/master/arm_template/install-dtr.sh"
+
       }
     }
   },
@@ -1165,7 +1167,31 @@
         "[resourceId('Microsoft.Compute/availabilitySets', variables('workers-windows').avSet)]",
         "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
       ],
-      "resources": []
+      "resources": [{
+        "name": "InstallDockerEE",
+        "type": "extensions",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "[variables('api').virtualMachines]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Compute/virtualMachines/extensions', 'manager-01', 'InstallDockerEE')]",
+          "[resourceId('Microsoft.Compute/virtualMachines', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
+        ],
+        "tags": {
+          "displayName": "InstallDocker"
+        },
+        "properties": {
+          "publisher": "Microsoft.Compute",
+          "type": "CustomScriptExtension",
+          "typeHandlerVersion": "1.9",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "fileUris": [
+              "[parameters('scripts').installUCPPowershell]"
+            ],
+            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1')]"
+          }
+        }
+      }]
     }
   ],
   "outputs": {
