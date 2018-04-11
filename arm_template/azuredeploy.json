@@ -11,8 +11,8 @@
         "managers": 3,
         "dtr": 3,
         "workers": {
-          "linux": 3,
-          "windows": 0
+          "linux": 2,
+          "windows": 2
         }
       }
     },
@@ -976,7 +976,8 @@
       "type": "Microsoft.Compute/virtualMachines",
       "copy": {
         "name": "VMCopy",
-        "count": "[sub(variables('dtr').instances, 1)]"
+        "count": "[sub(variables('dtr').instances, 1)]",
+        "mode": "serial"
       },
       "name": "[concat('dtr-', padLeft(copyIndex(2), 2, '0'))]",
       "apiVersion": "[variables('api').virtualMachines]",
@@ -1188,7 +1189,7 @@
             "fileUris": [
               "[parameters('scripts').installUCPPowershell]"
             ],
-            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1')]"
+            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"admin\" -Password \"DockerEE123!\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\"')]"
           }
         }
       }]

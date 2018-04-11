@@ -10,8 +10,8 @@
         "managers": 3,
         "dtr": 3,
         "workers": {
-          "linux": 3,
-          "windows": 0
+          "linux": 2,
+          "windows": 2
         }
       }
     }
