@@ -78,8 +78,8 @@ Else {
 }
 
 # Download the VHD used in the lab
-$Url = "https://www.docker.com/sites/default/files/vertical.png"
-$File = "C:\moby.png"
+$Url = "https://follisutility.blob.core.windows.net/hols/wis2016.vhd?st=2018-04-12T05%3A36%3A00Z&se=2019-04-13T05%3A36%3A00Z&sp=rl&sv=2017-04-17&sr=b&sig=QCnjVXlef9zFmd5GEx2cCpLWCvIk87xVBaqae2O%2BYx4%3D"
+$File = "C:\wis2016.vhd"
 
 If (Test-Path -Path $File) {
   Write-Output "File exists, skipping download"

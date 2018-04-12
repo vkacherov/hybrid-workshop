@@ -1,8 +1,13 @@
+![Docker Logo](https://www.docker.com/sites/default/files/horizontal.png)
+![Azure Logo](https://vignette.wikia.nocookie.net/logopedia/images/f/fa/Microsoft_Azure.svg/revision/latest/scale-to-width-down/290?cb=20170928200148)
+
 # Deploying Multi-OS applications with Docker EE
 
 Docker EE 17.06 is the first Containers-as-a-Service platform to offer production-level support for the integrated management and security of Linux AND Windows Server Containers.
 
 In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. We'll deploy both a Linux and Windows web app, as well as a multi-service application that includes both Windows and Linux components. We will then look at scaling up your web app, as well how Docker EE handles system interruptions and upgrades.
+
+This lab is built entirely on the capabilities and features of Microsoft Azure. Azure provides the infrastructure components necessary to build and maintain a production grade Docker Enterprise Edition cluster. We will be using multiple Azure Services throughout this lab.  
 
 **Difficulty**: Intermediate (assumes basic familiarity with Docker)
 
@@ -12,6 +17,7 @@ In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. 
 * [Task 0: Setup the lab environment](#task0)
 	* [Task 0.1: Sign up for a free 30-day Docker EE Trial License](#task0.1)
 	* [Task 0.2: Deploy Docker EE cluster to Azure](#task0.2)
+	* [Task 0.3: Connect to Azure Virtual Machines](#task0.3)
 * [Task 1: Configure the Docker EE Cluster](#task1)
   * [Task 1.1: Accessing PWD](#task1.1)
   * [Task 1.2: Install a Windows worker node](#task1.2)
@@ -37,7 +43,7 @@ In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. 
 
 - When you encounter a phrase in between `<` and `>`  you are meant to substitute in a different value.
 
-	For instance if you see `<dtr domain>` you would actually type something like `ip172-18-0-7-b70lttfic4qg008cvm90.direct.microsoft.play-with-docker.com`
+	For instance if you see `<dtr domain>` you would actually type something like `dtr-contoso.eastus.cloudapp.azure.com`
 
 - When you see the Linux penguin all the following instructions should be completed in your Linux console
 
@@ -45,11 +51,11 @@ In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. 
 
 - When you see the Windows flag all the subsequent instructions should be completed in your Windows console
 
-    ![](./images/windows75.png)
+	![](./images/windows75.png)
 
 ## <a name="task0"></a>Task 0: Setup the lab environment
 
-Before we can dive into deploying containres, we need to provision a Docker EE environment to run containers. This involves signing up for a Docker EE Trial License and provisioning the required Azure Infrastructure.
+Before we can dive into deploying containers, we need to provision a Docker EE environment. This involves signing up for a Docker EE Trial License and provisioning the required Azure Infrastructure.
 
 ### <a name="task 0.1"></a>Task 0.1: Sign up for a free 30-day Docker EE Trial License
 
@@ -71,89 +77,112 @@ Let's first register for a Docker ID account, which we will use to generate a tr
 
 	Note that URL at the bottom of the `Resources` column; it is labeled "Copy and pase this URL to download your Edition" and is structured as `https://storebits.docker.com/ee/trial/sub-00000000-0000-0000-0000-000000000000`. This URL is your specific Docker EE Trial License Key and will be used when we provision Azure resources.
 
-	Also under the `Resources` section, click `License Key` to download a .lic file. 
+	Also under the `Resources` section, click `License Key` to download a `docker_subscription.lic` file. This file is uploaded to a running Docker EE cluster to satisfying licensing requirements.
 
 ### <a name="task 0.2"></a>Task 0.2: Deploy Docker EE cluster to Azure
 
-1. Right-click the follow `Deploy to Azure` button and open the hyperlink in a new browser tab:
+An Azure Resource Manager (ARM) Template is provided for this lab. The template provisions all necessary cloud infrastructure to a new Azure Resource Group. 
+
+1. Right-click the following blue `Deploy to Azure` button and open the hyperlink in a new browser tab or window:
 
 	<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fstevenfollis%2Fhybrid-workshop%2Fmaster%2Farm_template%2Fazuredeploy.json" rel="nofollow">
 			<img src="https://camo.githubusercontent.com/9285dd3998997a0835869065bb15e5d500475034/687474703a2f2f617a7572656465706c6f792e6e65742f6465706c6f79627574746f6e2e706e67" data-canonical-src="http://azuredeploy.net/deploybutton.png" style="max-width:100%;">
 	</a>
 
+1. The Azure Portal will open in the new tab. Sign in, and on the Custom Deployment configure the template deployment:
+
+	* Select the subscription that you would like to use for this lab from the dropdown box
+	
+	* Create a new Resource Group, named in a way that is decently unique (we use this name as part of URLs). Your initials, or a few random numbers are sufficient. ex. `sf-docker-lab`, `docker-ee-421`, or `lab413`.
+	
+	* In the `DockerEEURL` box, paste in the URL that you copied down from the Docker Store in the previous activity. This is the URL that looks like `https://storebits.docker.com/ee/trial/sub-00000000-0000-0000-0000-000000000000` and is used to automatically setup the cluster with your 30-Day Trial License.
+
+	![](./images/custom_deployment.png)
+
+1. With the form completed, check the box for `I agree to the terms and conditions stated above` and click the `Purchase` button to begin the provisioning process.
+
+The provisioning process often takes 15-20 minutes to fully create and setup the entire Docker EE Cluster. In the interim, please feel free to take a short break, or begin watching the YouTube Video entitled [Getting Started with Docker for Windows and .NET Apps](https://www.youtube.com/watch?v=Pitm1x7pTfI).
+
+1. When the template deployment is completed, navigate to your Azure Resource Group and on the left-hand side select `Deployments`. 
+	
+	![](./images/template_deployments.png)
+
+1. Select the single deployment named `Microsoft.Template`, and on the following blade select `Outputs`. Make note of the `UCP_URL` and `DTR_URL`, as we will use these hyperlinks in future steps.
+
+	![](./images/template_outputs.png)
+
+
+### <a name="task 0.3"></a>Task 0.3: Connect to Azure Virtual Machines
+
+One of the key benefits of Docker EE is the ability to manage both Linux-based and Windows-based applications side-by-side on a single cluster. In the lab will be accessing using both types of Azure Virtual Machines, so let's test connectivity ahead of time. 
+
+1. In the Azure Resource Group blade where the resources were provisioned, select the Virtual Machine named `worker-win-02`. From the VM's blade, click `Connect` to download a Windows Remote Desktop Connection File (.rdp).  
+
+	> **Note** When navigating in a Resource Group that container numerous resources, toggle the `No grouping` dropdown on the top-right control bar to `Group by type`. It will be infinitely easier to locate particular resources.
+
+	On your local machine, open the .rdp file and login using username `\eeadmin` and password `DockerEE123!`. Open a PowerShell window inside of the RDP connection.
+
+1. Back in the Azure Resource Group blade, select the virtual machine named `worker-linux-02`. From the VM's blade, click `Connect` to see the command for starting an SSH connection to the node. Example `ssh eeadmin@13.92.152.49`
+
+	On your local machine, SSH into the VM. If you are running Windows 10 Fall Creator's Update or later you have SSH built into PowerShell and can run the `ssh` command directly in PowerShell. Otherwise, [putty](https://www.howtogeek.com/311287/how-to-connect-to-an-ssh-server-from-windows-macos-or-linux/) can be used.
+
+You have now accessed each type of VM used in today's lab.
 
 ## <a name="task1"></a>Task 1: Configure the Docker EE Cluster
 
-The Play with Docker (PWD) environment is almost completely set up, but before we can begin the labs, we need to do two more steps. First we'll add a Windows node to the cluster, and then we'll create two repositories on the DTR server.
-(The Linux worker node is already added to the cluster)
+The Docker EE Cluster is almost completely set up, but before we can begin the labs, we need to do two more steps. First we'll add an additional Windows node to the cluster, and then we'll create two repositories on the DTR server.
 
-### <a name="task 1.1"></a>Task 1.1: Accessing PWD
+### <a name="task 1.1"></a>Task 1.1: Accessing UCP
 
-1. Navigate in your web browser to [the PWD environment sign-in page](https://goto.docker.com/2017PWDonMicrosoftAzure_MTALP.html)
+The "Universal Control Plane" is a web-based interface for administering our container workloads across an entire cluster of virtual machine nodes. Next, we will use UCP to finalize our cluster configuration.
 
-	> **Note**: You might want to right click the above link and open it in a new tab or window
+1. Navigate in your web browser to the UCP URL that you previously located in the Azure Portal. ex. `https://ucp-sf-docker-lab.eastus.cloudapp.azure.com`
 
-2. Fill out the form, and click `submit`. You will then be redirected to the PWD environment.
+	> **Note**: Because this is a lab-based install of Docker EE we are using the default self-signed certificates. Because of this your browser may display a security warning. It is safe to click through this warning.
+	>
+	> In a production environment you would use certificates from a trusted certificate authority and would not see this screen.
+	> ![](./images/ssl_error.png)
 
-3. Click `Access`
-
-	It will take a few minutes to provision out your PWD environment. After this step completes, you'll be ready to move on to step 1.2: Install a Windows worker node
+1. When prompted enter the username `admin` and password `DockerEE123!`. The UCP web interface should load up in your web browser.
 
 ### <a name="task1.2"></a>Task 1.2: Install a Windows worker node
 
-Let's start by adding our 3rd node to the cluster, a Windows Server 2016 worker node.
+Let's start by adding our 2nd Windows Server 2016 worker node to the cluster.
 
-1. From the main PWD screen click the `UCP` button on the left side of the screen
-
-	> **Note**: Because this is a lab-based install of Docker EE we are using the default self-signed certs. Because of this your browser may display a security warning. It is safe to click through this warning.
-	>
-	> In a production environment you would use certs from a trusted certificate authority and would not see this screen.
-	> ![](./images/ssl_error.png)
-
-2. When prompted enter your username and password (these can be found below the console window in the main PWD screen). The UCP web interface should load up in your web browser.
-
-	> **Note**: Once the main UCP screen loads you'll notice there is a red warning bar displayed at the top of the UCP screen, this is an artifact of running in a lab environment. A UCP server configured for a production environment would not display this warning
-	>
-	> ![](./images/red_warning.png)
-
-
-3. From the main dashboard screen, click `Add a Node` on the bottom left of the screen
+1. From the main dashboard in UCP, click `Add a Node` on the bottom left of the screen
 
 	![](./images/add_a_node.png)
 
-4. Select node type "Windows", check the box, that you followed the instructions and copy the text from the dark box shown on the `Add Node` screen.
+1. Select node type "Windows", check the box, that you followed the instructions and copy the text from the dark box shown on the `Add Node` screen.
 
 	> **Note** There is an icon in the upper right corner of the box that you can click to copy the text to your clipboard
-	> ![](./images/join_text.png)
-
+	![](./images/join_text.png)
 
 	> **Note**: You may notice that there is a UI component to select `Linux` or `Windows`on the `Add Node` screen. In a production environment where you are starting from scratch there are [a few prerequisite steps] to adding a Windows node. However, we've already done these steps in the PWD environment. So for this lab, just leave the selection on `Linux` and move on to step 2
 
-
-
 ![](./images/windows75.png)
 
-6. Switch back to the PWD interface, and click the name of your Windows node. This will connect the web-based console to your Windows Server 2016 Docker EE host.
+1. We need to run the `docker swarm join` command inside of a Window Server node to add it to the cluster. Open the Remote Desktop Connection to your `worker-win-02` Windows Server VM from earlier.
 
-7. Paste the text from Step 4 at the command prompt in the Windows console. (depending on your browser, this can be tricky: try the "paste" command from the edit menu instead of right clicking or using keyboard shortcuts)
+1. Paste the `docker swarm join` text from UCP into a command prompt or PowerShell window in the remote desktop connection.
 
 	You should see the message `This node joined a swarm as a worker.` indicating you've successfully joined the node to the cluster.
 
-5. Switch back to the UCP server in your web browser and click the `x` in the upper right corner to close the `Add Node` window
+1. Switch back to the UCP server in your web browser and click the `x` in the upper right corner to close the `Add Node` window
 
-6. You should be taken to the `Nodes` screen and will see 3 nodes listed at the bottom of your screen.
+1. You should be taken to the `Nodes` screen and will see 3 nodes listed at the bottom of your screen.
 
 	Initially the new worker node will be shown with status `down`. After a minute or two, refresh your web browser to ensure that your Windows worker node has come up as `healthy`
 
 	![](./images/node_listing.png)
 
-Congratulations on adding a Windows node to your UCP cluster. Next up we'll create a couple of repositories in Docker Trusted registry.
+Congratulations on adding a Windows node to your UCP cluster. Next up we'll create a couple of repositories in Docker Trusted Registry.
 
 ### <a name="task1.3"></a>Task 1.3: Create Two DTR Repositories
 
-Docker Trusted Registry is a special server designed to store and manage your Docker images. In this lab we're going to create a couple of different Docker images, and push them to DTR. But before we can do that, we need to setup repositories in which those images will reside.
+Docker Trusted Registry is a special server designed to store and manage your Docker images. In this lab we're going several different Docker images, and push them to DTR. But before we can do that, we need to setup repositories in which those images will reside.
 
-1. In the PWD web interface click the `DTR` button on the left side of the screen.
+1. Open DTR from the URL located in the Ouputs section of the Azure Portal's Template Deployment blade that we located earlier
 
 	> **Note**: As with UCP before, DTR is also using self-signed certs. It's safe to click through any browser warning you might encounter.
 
@@ -169,7 +198,6 @@ Docker Trusted Registry is a special server designed to store and manage your Do
 
 5. Under `REPOSITORY NAME` type `windows_tweet_app`. Leave the rest of the values the same, and click `Save`
 
-
 	![](./images/two_repos.png)
 
 Congratulations, you have created two new repositories.
@@ -184,12 +212,12 @@ Let's start with the Linux version.
 
 ![](./images/linux75.png)
 
-1. From PWD click on the `worker1` link on the left to connnect your web console to the UCP Linux worker node.
+1. SSH into the `worker-linux-02` VM that we tested earlier.
 
-2. Use git to clone the workshop repository.
+1. Use git to clone the workshop repository.
 
 	```
-	$ git clone https://github.com/dockersamples/hybrid-workshop.git
+	$ git clone https://github.com/stevenfollis/hybrid-workshop.git
 	```
 
 	You should see something like this as the output:
@@ -213,7 +241,7 @@ Let's start with the Linux version.
 
 	`$ cd ./hybrid-workshop/linux_tweet_app/`
 
-2. Use `docker build` to build your Linux tweet web app Docker image.
+1. Use `docker build` to build your Linux tweet web app Docker image.
 
 	`$ docker build -t <dtr hostname>/<your user name>/linux_tweet_app .`
 
@@ -248,7 +276,7 @@ Let's start with the Linux version.
 		Successfully built ed5f550fc339
 		Successfully tagged  <dtr hostname>/<your user name>/linux_tweet_app:latest
 
-3. Log into your DTR server from the command line
+1. Log into your DTR server from the command line
 
 	```
 	$ docker login <dtr hostname>
@@ -256,7 +284,7 @@ Let's start with the Linux version.
 	Password: <your password>
 	Login Succeeded
 	```
-4. Use `docker push` to upload your image up to Docker Trusted Registry.
+1. Use `docker push` to upload your image up to Docker Trusted Registry.
 
 	```
 	$ docker push <dtr hostname>/<your user name>/linux_tweet_app
@@ -274,11 +302,11 @@ Let's start with the Linux version.
 	latest: digest: sha256:9a376fd268d24007dd35bedc709b688f373f4e07af8b44dba5f1f009a7d70067 size: 1363
 	```
 
-4. In your web browser head back to your DTR server and click `View Details` next to your `linux_tweet_app` repo to see the details of the repo.
+1. In your web browser head back to your DTR server and click `View Details` next to your `linux_tweet_app` repo to see the details of the repo.
 
 	> **Note**: If you've closed the tab with your DTR server, just click the `DTR` button from the PWD page.
 
-5. Click on `Images` from the horizontal menu. Notice that your newly pushed image is now on your DTR.
+1. Click on `Images` from the horizontal menu. Notice that your newly pushed image is now on your DTR.
 
 ### <a name="task2.3"></a> Task 2.3: Deploy the Web App using UCP
 
@@ -290,27 +318,27 @@ Services are application building blocks (although in many cases an application 
 
 	> **Note**: If you've closed your UCP tab, you can simply click `UCP` from the PWD page to relaunch the UCP web interface
 
-2. In the left hand menu click `Services`
+1. In the left hand menu click `Services`
 
-3. In the upper right corner click `Create Service`
+1. In the upper right corner click `Create Service`
 
-4. Enter `linux_tweet_app` for the name.
+1. Enter `linux_tweet_app` for the name.
 
-4. Under `Image` enter the path to your image which should be `<dtr hostname>/<your user name>/linux_tweet_app`
+1. Under `Image` enter the path to your image which should be `<dtr hostname>/<your user name>/linux_tweet_app`
 
-8. From the left hand menu click `Network`
+1. From the left hand menu click `Network`
 
-9. Click `Publish Port+`
+1. Click `Publish Port+`
 
 	We need to open a port for our web server. Since port 80 is already used by UCP on one node, and DTR on the other, we'll need to pick an alternate port. We'll go with 8088.
 
-10. Fill out the port fields as shown below
+1. Fill out the port fields as shown below
 
 	![](./images/linux_ports.png)
 
-11. Click `Confirm`
+1. Click `Confirm`
 
-12. Click `Create` near the bottom right of the screen.
+1. Click `Create` near the bottom right of the screen.
 
 After a few seconds you should see a green dot next to your service name. Once you see the green dot you can point your web browser to `http://<UCP hostname>:8088` to see your running website  (it may take a minute or so after the dot turns green for the service to be fully available).
 
@@ -322,15 +350,15 @@ You may also click on the service to open the right sidebar to inspect the servi
 
 1. In UCP click on `Services` in the left hand menu.
 
-2. From the List of services click on `linux_tweet_app`
+1. From the List of services click on `linux_tweet_app`
 
-3. From the dropdown on the right-hand side select `Inspect Resources` and then `Containers` Notice which host the container is running on. Is it running on the manager or the worker node?
+1. From the dropdown on the right-hand side select `Inspect Resources` and then `Containers` Notice which host the container is running on. Is it running on the manager or the worker node?
 
 	![](./images/linux_tweet_app_container.png)
 
 	If it's the worker node, how did your web browser find it when we pointed at the UCP Manager node?
 
-4. Point your browser at `http://<DTR hostname>:8088`. Did the site come up?
+1. Point your browser at `http://<DTR hostname>:8088`. Did the site come up?
 
 	In the end it doesn't matter if we try and access the service via the manager or the worker, Docker EE will route the request correctly.
 
@@ -338,7 +366,7 @@ You may also click on the service to open the right sidebar to inspect the servi
 
 	This is an example of the built in ingress load balancer in Docker EE. Regardless of where a Linux-based service is actually running, you can access it from any Linux node in the cluster. So, if it's running on the manager in our cluster, you can still get to it by accessing the worker node. Docker EE can accept the request coming into any of the Linux nodes in the cluster, and route it to a host that's actually running a container for that service.
 
-5. Be sure to clear the filter in the UCP UI by clicking the `X` in the upper right corner. If you don't do this, you won't see any of the other services you deploy later in the lab
+1. Be sure to clear the filter in the UCP UI by clicking the `X` in the upper right corner. If you don't do this, you won't see any of the other services you deploy later in the lab
 
 	![](./images/clear_filter.png)
 
@@ -354,7 +382,7 @@ There is a Windows Server 2016 VHD that contains our Windows Tweet App stored in
 
 1. Click the name of your Windows host in PWD to switch your web console.
 
-2. Set up the Image2Docker PowerShell module - you need to install the module, and then import it to make it available in the session. Copy and paste these commands into the Windows console:
+1. Set up the Image2Docker PowerShell module - you need to install the module, and then import it to make it available in the session. Copy and paste these commands into the Windows console:
 
 ```
 Install-Module -Force Image2Docker
@@ -364,8 +392,7 @@ Install-Module -Force Image2Docker
 Import-Module Image2Docker
 ```
 
-
-3. Use Image2Docker's `ConvertTo-Dockerfile` command to create a dockerfile from the VHD.
+1. Use Image2Docker's `ConvertTo-Dockerfile` command to create a dockerfile from the VHD.
 
 	Copy and paste the command below into your Windows console window.
 
@@ -395,7 +422,7 @@ When the process completes you'll find a Dockerfile in `c:\windowstweetapp`
 	`PS C:\> cd c:\windowstweetapp\`
 
 
-2. Use `docker build` to build your Windows tweet web app Docker image.
+1. Use `docker build` to build your Windows tweet web app Docker image.
 
 	`$ docker build -t <dtr hostname>/<your user name>/windows_tweet_app .`
 
@@ -418,7 +445,7 @@ When the process completes you'll find a Dockerfile in `c:\windowstweetapp`
 	```
 	> **Note**: It will take a few minutes for your image to build.
 
-4. Log into Docker Trusted Registry
+1. Log into Docker Trusted Registry
 
 	```
 	PS C:\> docker login <dtr hostname>
@@ -427,7 +454,7 @@ When the process completes you'll find a Dockerfile in `c:\windowstweetapp`
 	Login Succeeded
 	```
 
-5. Push your new image up to Docker Trusted Registry.
+1. Push your new image up to Docker Trusted Registry.
 
 	```
 	PS C:\Users\docker> docker push <dtr hostname>/<your username>/windows_tweet_app
@@ -445,7 +472,7 @@ When the process completes you'll find a Dockerfile in `c:\windowstweetapp`
 	f358be10862c: Skipped foreign layer
 	latest: digest: sha256:e28b556b138e3d407d75122611710d5f53f3df2d2ad4a134dcf7782eb381fa3f size: 2825
 	```
-6. You may check your repositories in the DTR web interface to see the newly pushed image.
+1. You may check your repositories in the DTR web interface to see the newly pushed image.
 
 ### <a name="task3.3"></a> Task 3.3: Deploy the Windows Web App
 
@@ -453,29 +480,29 @@ Now that we have our Windows Tweet App up on the DTR server, let's deploy it. It
 
 1. Switch back to UCP in your web browser
 
-2. In the left hand menu click `Services`
+1. In the left hand menu click `Services`
 
-3. In the upper right corner click `Create Service`
+1. In the upper right corner click `Create Service`
 
-4. Enter `windows_tweet_app` for the name.
+1. Enter `windows_tweet_app` for the name.
 
-4. Under `Image` enter the path to your image which should be `<dtr hostname>/<your username>/windows_tweet_app`
+1. Under `Image` enter the path to your image which should be `<dtr hostname>/<your username>/windows_tweet_app`
 
-8. From the left hand menu click `Network`
+1. From the left hand menu click `Network`
 
-8. Set the `ENDPOINT SPEC` to `DNS Round Robin`. This tells the service to load balance using DNS. The alternative is VIP, which uses IPVS.
+1. Set the `ENDPOINT SPEC` to `DNS Round Robin`. This tells the service to load balance using DNS. The alternative is VIP, which uses IPVS.
 
-9. Click `Publish Port+`
+1. Click `Publish Port+`
 
 	We need to open a port for our web server. This app runs on port 80 which is used by DTR so let's use 8082.
 
-10. Fill out the port fields as shown below. **Be sure to set the `Publish Mode` to  `Host`**
+1. Fill out the port fields as shown below. **Be sure to set the `Publish Mode` to  `Host`**
 
 	![](./images/windows_ports.png)
 
-11. Click 'Confirm'
+1. Click 'Confirm'
 
-12. Click `Create` near the bottom right of the screen.
+1. Click `Create` near the bottom right of the screen.
 
 After a few seconds you should see a green dot next to your service name. Once you see the green dot you can point your web browser to `http://<windows host>:8082` to see your running website.
 
@@ -528,29 +555,29 @@ Let's Deploy an application stack using the Docker Compose file above.
 
 1. Move to the UCP console in your web browser
 
-2. In the left hand menu click `Stacks`
+1. In the left hand menu click `Stacks`
 
-3. In the upper right click `Create Stack`
+1. In the upper right click `Create Stack`
 
-4. Enter `atsea` under `NAME`
+1. Enter `atsea` under `NAME`
 
-5. Select `Services` under `MODE`
+1. Select `Services` under `MODE`
 
-6. Select `SHOW VERBOSE COMPOSE OUTPUT`
+1. Select `SHOW VERBOSE COMPOSE OUTPUT`
 
-7. Paste the compose file from above into the `COMPOSE.YML` box
+1. Paste the compose file from above into the `COMPOSE.YML` box
 
-8.  Click `Create`
+1.  Click `Create`
 
 	You will see some output to show the progress of your deployment, and then a banner will pop up at the bottom indicating your deployment was successful.
 
-9. Click `Done`
+1. Click `Done`
 
 You should now be back on the Stacks screen.
 
 1. Click on the `atsea` stack in the list
 
-2. From the right side of the screen choose `Services` under `Inspect Resource`
+1. From the right side of the screen choose `Services` under `Inspect Resource`
 
 	![](./images/inspect_resoource.png)
 

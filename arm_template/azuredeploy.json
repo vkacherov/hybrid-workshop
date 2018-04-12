@@ -1196,13 +1196,13 @@
     }
   ],
   "outputs": {
-    "ucpURL": {
+    "UCP_URL": {
       "type": "string",
       "value": "[concat('https://', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn)]"
     },
-    "dtrCommand": {
+    "DTR_URL": {
       "type": "string",
-      "value": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker', ' && sh install-dtr.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn)]"
+      "value": "[concat('https://', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn)]"
     }
   }
 }
