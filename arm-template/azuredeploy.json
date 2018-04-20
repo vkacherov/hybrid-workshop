@@ -604,19 +604,23 @@
         "count": "[variables('managers').instances]"
       },
       "properties": {
-        "ipConfigurations": [{
-          "name": "ipconfig",
-          "properties": {
-            "primary": "true",
-            "publicIPAddress": {
-              "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat('manager-', padLeft(copyIndex(1), 2, '0')))]"
-            },
-            "subnet": {
-              "id": "[variables('managers').subnet]"
-            },
-            "loadBalancerBackendAddressPools": [{
-              "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
-            }]
+        "copy": [{
+          "name": "ipConfigurations",
+          "count": 128,
+          "input": {
+            "name": "[concat('ipconfig', copyIndex('ipConfigurations'))]",
+            "properties": {
+              "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat('manager-', padLeft(copyIndex('NICCopy', 1), 2, '0')))]"
+              },
+              "subnet": {
+                "id": "[variables('managers').subnet]"
+              },
+              "loadBalancerBackendAddressPools": [{
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
+              }]
+            }
           }
         }]
       },
