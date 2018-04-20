@@ -1,10 +1,15 @@
-# Deploying Multi-OS applications with Docker EE
+![Docker Logo](https://www.docker.com/sites/default/files/horizontal.png)
+![Azure Logo](https://vignette.wikia.nocookie.net/logopedia/images/f/fa/Microsoft_Azure.svg/revision/latest/scale-to-width-down/290?cb=20170928200148)
+
+# Deploying Multi-OS applications with Docker EE on Microsoft Azure
 
 Docker EE 2.0 (beta) is the first Containers-as-a-Service platform to offer production-level support for the integrated management and security of both Linux and Windows Server Containers. It is also the first platform to support both Docker Swarm and Kubernetes orchestration.
 
 In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. We'll deploy both a Java web app on Linux and a multi-service application that includes both Windows and Linux components using Docker Swarm. Then we'll take a look at securing and scaling the application. Finally, we will then deploy the app using Kubernetes.
 
-> **Difficulty**: Intermediate (assumes basic familiarity with Docker) If you're looking for a basic introduction to Docker, check out [https://training.play-with-docker.com](https://training.play-with-docker.com)
+This lab is built entirely on the capabilities and features of Microsoft Azure. Azure provides the infrastructure components necessary to build and maintain a production-grade Docker Enterprise Edition cluster. We will be using multiple Azure Services throughout this lab. Docker EE is also available on Azure Stack for on-premises and hybrid container scenarios.
+
+> **Difficulty**: Intermediate (assumes basic familiarity with Docker and Azure) If you're looking for a basic introduction to Docker, check out [https://training.play-with-docker.com](https://training.play-with-docker.com)
 
 > **Time**: Approximately 75 minutes
 
@@ -16,6 +21,10 @@ In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. 
 
 > **Tasks**:
 
+> * [Task 0: Setup the lab environment](#task0)
+>   * [Task 0.1: Sign up for a free 30-day Docker EE Trial License](#task0.1)
+>   * [Task 0.2: Deploy Docker EE cluster to Azure](#task0.2)
+>   * [Task 0.3: Connect to Azure Virtual Machines](#task0.3)
 > * [Task 1: Configure the Docker EE Cluster](#task1)
 >   * [Task 1.1: Accessing PWD](#task1.1)
 >   * [Task 1.2: Install a Windows worker node](#task1.2)
@@ -36,134 +45,175 @@ In this lab we'll use a Docker EE cluster comprised of Windows and Linux nodes. 
 >   * [Task 4.4: Verify the app](#task4.4)
 > * [Task 5: Security Scanning](#task5)
 
-## Understanding the Play With Docker Interface
-
-![](./images/pwd_screen.png)
-
-This workshop is only available to people in a pre-arranged workshop. That may happen through a [Docker Meetup](https://events.docker.com/chapters/), a conference workshop that is being led by someone who has made these arrangements, or special arrangements between Docker and your company. The workshop leader will provide you with the URL to a workshop environment that includes [Docker Enterprise Edition](https://www.docker.com/enterprise-edition). The environment will be based on [Play with Docker](https://labs.play-with-docker.com/).
-
-If none of these apply to you, contact your local [Docker Meetup Chapter](https://events.docker.com/chapters/) and ask if there are any scheduled workshops. In the meantime, you may be interested in the labs available through the [Play with Docker Classroom](training.play-with-docker.com).
-
-There are three main components to the Play With Docker (PWD) interface. 
-
-### 1. Console Access
-Play with Docker provides access to the 3 Docker EE hosts in your Cluster. These machines are:
-
-* A Linux-based Docker EE 18.01 Manager node
-* Three Linux-based Docker EE 18.01 Worker nodes
-* A Windows Server 2016-based Docker EE 17.06 Worker Node
-
-> **Important Note: beta** Please note, as of now this is a beta Docker EE 2.0 environment. Docker EE 2.0 shows off the new Kubernetes functionality which is described below.
-
-By clicking a name on the left, the console window will be connected to that node.
-
-### 2. Access to your Universal Control Plane (UCP) and Docker Trusted Registry (DTR) servers
-
-Additionally, the PWD screen provides you with a one-click access to the Universal Control Plane (UCP)
-web-based management interface as well as the Docker Trusted Registry (DTR) web-based management interface. Clicking on either the `UCP` or `DTR` button will bring up the respective server web interface in a new tab.
-
-### 3. Session Information
-
-Throughout the lab you will be asked to provide either hostnames or login credentials that are unique to your environment. These are displayed for you at the bottom of the screen.
-
 ## Document conventions
 
 - When you encounter a phrase in between `<` and `>`  you are meant to substitute in a different value.
 
-	For instance if you see `<dtr hostname>` you would actually type something like `ip172-18-0-7-b70lttfic4qg008cvm90.direct.ee-workshop.play-with-docker.com`
+	For instance if you see `<dtr hostname>` you would actually type something like `dtr-gf-docker-lab52.eastus.cloudapp.azure.com`
 
-
-- When you see the Linux penguin all the following instructions should be completed in your Linux console
-
-	![](./images/linux75.png)
-
-- When you see the Windows flag all the subsequent instructions should be completed in your Windows console
+- When you see the Windows flag, you will complete all the subsequent instructions in a Windows Remote Desktop session
 
     ![](./images/windows75.png)
 
+- When you see Tux, the Linux penguin, you will complete the following instructions in a Linux SSH session
+
+	![](./images/linux75.png)
+
 ## <a name="intro1"></a>Introduction
-Docker EE provides an integrated, tested and certified platform for apps running on enterprise Linux or Windows operating systems and Cloud providers. Docker EE is tightly integrated to the the underlying infrastructure to provide a native, easy to install experience and an optimized Docker environment. Docker Certified Infrastructure, Containers and Plugins are exclusively available for Docker EE with cooperative support from Docker and the Certified Technology Partner.
+Docker EE provides an integrated, tested and certified platform for apps running on enterprise Linux or Windows operating systems and cloud providers. Docker EE is tightly integrated to the the underlying infrastructure to provide a native, easy to install experience and an optimized Docker environment. Docker Certified Infrastructure, Containers and Plugins are exclusively available for Docker EE with cooperative support from Docker and the Certified Technology Partner.
 
 ### <a name="intro2"></a>Overview of Orchestration
-While it is easy to run an application in isolation on a single machine, orchestration allows you to coordinate multiple machines to manage an application, with features like replication, encryption, loadbalancing, service discovery and more. If you've read anything about Docker, you have probably heard of Kubernetes and Docker swarm mode. Docker EE allows you to use either Docker swarm mode or Kubernetes for orchestration. 
+While it is easy to run an application in isolation on a single machine, orchestration allows you to coordinate multiple machines to manage an application, with features like replication, encryption, load-balancing, service discovery and more. If you have read about Docker, you have likely heard of Kubernetes and Docker swarm mode. Docker EE allows you to use either Docker swarm mode or Kubernetes for orchestration. 
 
 Both Docker swarm mode and Kubernetes are declarative: you declare your cluster's desired state, and applications you want to run and where, networks, and resources they can use. Docker EE simplifies this by taking common concepts and moving them to the a shared resource.
 
 #### <a name="intro2.1"></a>Overview of Docker Swarm mode
-A swarm is a group of machines that are running Docker and joined into a cluster. After that has happened, you continue to run the Docker commands you’re used to, but now they are executed on a cluster by a swarm manager. The machines in a swarm can be physical or virtual. After joining a swarm, they are referred to as nodes.
+A Swarm is a group of machines that are running Docker and joined into a cluster. After that has happened, you continue to run the Docker commands you are used to, but now they are executed on a cluster by a Swarm manager. The machines in a Swarm can be physical or virtual. After joining a Swarm, they are referred to as nodes.
 
-Swarm mode uses managers and workers to run your applications. Managers run the swarm cluster, making sure nodes can communicate with each other, allocate applications to different nodes, and handle a variety of other tasks in the cluster. Workers are there to provide extra capacity to your applications. In this workshop, you have one manager and three workers.
+Swarm mode uses managers and workers to run your applications. Managers run the Swarm cluster, making sure nodes can communicate with each other, allocate applications to different nodes, and handle a variety of other tasks in the cluster. Workers are there to provide extra capacity to your applications. In this workshop, you have three managers and six workers.
 
 #### <a name="intro2.2"></a>Overview of Kubernetes
 
-Kubernetes is available in Docker EE 2.0 (currently in beta) and included in this workshop. Kubernetes deployments tend to be more complex than Docker Swarm, and there are many component types. UCP simplifies a lot of that, relying on Docker Swarm to handle shared resources. We'll concentrate on Pods and Load Balancers in this workshop, but there's plenty more supported by UCP 2.0.
+Kubernetes is available in Docker EE 2.0 and included in this workshop. Kubernetes deployments tend to be more complex than Docker Swarm, and there are many component types. Docker Universal Control Plane (UCP) simplifies much of that complexity, relying on Docker Swarm to handle shared resources. We will concentrate on Pods and Load Balancers in this workshop, but there are numerous more components supported by UCP 2.0.
+
+## <a name="task1"></a>Task 0: Setup the Lab Environment
+
+Before we can dive into deploying containers, we need to provision a Docker EE environment. This involves signing up for a Docker EE Trial License and provisioning the required Azure Infrastructure.
+
+### <a name="task 0.1"></a>Task 0.1: Sign up for a free 30-day Docker EE Trial License
+
+Let's first register for a Docker ID account, which we will use to generate a trial license.
+
+1. Navigate in your web browser to [the Docker Store](https://store.docker.com).
+
+	![](./images/docker_store.png)
+
+1. In the to pright corner, click `Log In`. On the Log In screen, select `Create Account` and complete the new account process.
+
+1. Verify your email address by clicking the verification link in the email sent by Docker Store. 
+
+1. Login into the Docker Store, navigate to [Docker Enterprise Edition Trial](https://store.docker.com/editions/enterprise/docker-ee-trial), and select `Start 1 Month Trial`. 
+
+	![](./images/docker_trial.png)
+
+1. Complete the form and click `Start your evaluation`. You will be taken to the Setup Instructions screen. 
+
+	![](./images/docker_trial_setup.png)
+
+	Note that URL at the bottom of the `Resources` column; it is labeled "Copy and pase this URL to download your Edition" and is structured as `https://storebits.docker.com/ee/trial/sub-00000000-0000-0000-0000-000000000000`. This URL is your specific Docker EE Trial License Key and will be used when we provision Azure resources.
+
+	Also under the `Resources` section, click `License Key` to download a `docker_subscription.lic` file. This file is uploaded to a running Docker EE cluster to configure licensing requirements.
+
+### <a name="task 0.2"></a>Task 0.2: Deploy Docker EE cluster to Azure
+
+An Azure Resource Manager (ARM) Template is provided for this lab. The template provisions all necessary cloud infrastructure to a new Azure Resource Group. 
+
+1. Right-click the following blue `Deploy to Azure` button and open the hyperlink in a new browser tab or window:
+
+	<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fstevenfollis%2Fhybrid-workshop%2Fmaster%2Farm_template%2Fazuredeploy.json" rel="nofollow">
+			<img src="https://camo.githubusercontent.com/9285dd3998997a0835869065bb15e5d500475034/687474703a2f2f617a7572656465706c6f792e6e65742f6465706c6f79627574746f6e2e706e67" data-canonical-src="http://azuredeploy.net/deploybutton.png" style="max-width:100%;">
+	</a>
+
+1. The Azure Portal will open in the new tab. Sign in, and on the Custom Deployment configure the template deployment:
+
+	* Select the subscription that you would like to use for this lab from the dropdown box
+	
+	* Create a new Resource Group, named in a way that is globally unique (we use this name as part of URLs). Your initials or a few random numbers should be sufficient. ex. `gf-docker-lab`, `docker-ee-421`, or `lab413`. If you and a colleague(s) are completing this lab at the same time, ensure that you are not using duplicative names.
+	
+	* In the `DockerEEURL` box, paste in the URL that you copied down from the Docker Store in the previous activity. This is the URL that looks like `https://storebits.docker.com/ee/trial/sub-00000000-0000-0000-0000-000000000000` and is used to automatically setup the cluster with your 30-Day Trial License.
+
+	![](./images/custom_deployment.png)
+
+1. With the form completed, check the box for `I agree to the terms and conditions stated above` and click the `Purchase` button to begin the provisioning process.
+
+The provisioning process often takes 15-20 minutes to fully create and setup the entire Docker EE Cluster. In the interim, please feel free to take a short break, or begin watching the YouTube Video entitled [Getting Started with Docker for Windows and .NET Apps](https://www.youtube.com/watch?v=Pitm1x7pTfI).
+
+1. When the template deployment is completed, navigate to your Azure Resource Group and on the left-hand side select `Deployments`. 
+	
+	![](./images/template_deployments.png)
+
+1. Select the single deployment named `Microsoft.Template`, and on the following blade select `Outputs`. Make note of the `UCP_URL` and `DTR_URL`, as we will use these hyperlinks in future steps.
+
+	![](./images/template_outputs.png)
+
+	> **NOTE**: Keep this Azure Portal bale open in a separate browser tab for easy reference
+
+The ARM Template deploys a variety of Azure resources, depicted by the follow architecture:
+
+![](./architecture/architecture.png)
+
+### <a name="task 0.3"></a>Task 0.3: Connect to Azure Virtual Machines
+
+One of the key benefits of Docker EE is the ability to manage both Linux-based and Windows-based applications side-by-side on a single cluster. In the lab will be accessing using both types of Azure Virtual Machines, so let us test connectivity. 
+
+1. In the Azure Resource Group blade where the resources were provisioned, select the Virtual Machine named `worker-win-02`. From the VM's blade, click `Connect` to download a Windows Remote Desktop Connection File (.rdp).  
+
+	> **Note** When navigating within an Azure Portal Resource Group blade that container numerous resources, toggle the `No grouping` dropdown on the top-right control bar to `Group by type`. It will be infinitely easier to locate particular resources.
+
+	On your local machine, open the .rdp file and login using username `\eeadmin` and password `DockerEE123!`. Open a PowerShell window inside of the RDP connection and run `docker version` to ensure that the Docker Engine was properly installed.
+
+	> **Note** Remote Desktop is also available for Mac Users via the [Apple Store](https://itunes.apple.com/us/app/microsoft-remote-desktop-8-0/id715768417?mt=12)
+
+1. Back in the Azure Resource Group blade, select the virtual machine named `worker-linux-02`. From the VM's blade, click `Connect` to see the command for starting an SSH connection to the node. Example `ssh eeadmin@13.92.152.49`
+
+	On your local machine, SSH into the VM. If you are running Windows 10 Fall Creator's Update or later you have SSH built into PowerShell and can run the `ssh` command directly in PowerShell. Otherwise, [putty](https://www.howtogeek.com/311287/how-to-connect-to-an-ssh-server-from-windows-macos-or-linux/) or the Windows Subsystem for Linux (WSL) can be used. 
+
+	Once you establish an SSH connection to the remote VM, run `docker version` to ensure that the DOcker Engine was properly installed.
+
+You have now accessed each type of VM used in today's lab.
 
 ## <a name="task1"></a>Task 1: Configure the Docker EE Cluster
 
-The Play with Docker (PWD) environment is almost completely set up, but before we can begin the labs, we need to do two more steps. First we'll add a Windows node to the cluster. We've left the node unjoined so you can see how easy it is to do. Then we'll create two repositories in Docker Trusted Registry.
+The Azure environment is almost completely set up, but before we can begin the labs, we need to do two more steps. First we will add an additional Windows node to the cluster. We have left the node unjoined so you can see how easy it is to do. Then, will create two repositories in Docker Trusted Registry.
 (The Linux worker nodes are already added to the cluster)
 
-### <a name="task 1.1"></a>Task 1.1: Accessing PWD
+### <a name="task 1.1"></a>Task 1.1: Accessing UCP
 
-1. Navigate in your web browser to the URL the workshop organizer provided to you.
+The "Universal Control Plane" is a web-based interface for administering our container workloads across an entire cluster of virtual machine nodes. Next, we will use UCP to finalize our cluster configuration.
 
-2. Fill out the form, and click `submit`. You will then be redirected to the PWD environment.
+1. Navigate in your web browser to the UCP URL that you previously located in the Azure Portal. ex. `https://ucp-gf-docker-lab52.eastus.cloudapp.azure.com`
 
-	It may take a few minutes to provision out your PWD environment. After this step completes, you'll be ready to move on to task 1.2: Install a Windows worker node
+	> **Note**: Because this is a lab-based install of Docker EE we are using the default self-signed certificates. Because of this your browser may display a security warning. It is safe to click through this warning.
+	>
+	> In a production environment you would use certificates from a trusted certificate authority and would not see this screen.
+	> ![](./images/ssl_error.png)
+
+1. When prompted enter the username `admin` and password `DockerEE123!`. The UCP web interface should load up in your web browser.
 
 ### <a name="task1.2"></a>Task 1.2: Join a Windows worker node
 
-Let's start by adding our 3rd node to the cluster, a Windows Server 2016 worker node. This is done using Docker Swarm.
+Let's start by adding our 2nd Windows Server 2016 worker node to the cluster.
 
-1. From the main PWD screen click the `UCP` button on the left side of the screen
+1. You will be asked for a license key. Click `Upload License` and select the `docker_subscription.lic` file that was downloaded from the Docker Store after signing up for the Trial License.
 
-	> **Note**: Because this is a lab-based install of Docker EE we are using the default self-signed certs. Because of this your browser may display a security warning. It is safe to click through this warning.
-	>
-	> In a production environment you would use certs from a trusted certificate authority and would not see this screen.
-	>
-	> ![](./images/ssl_error.png)
-
-2. When prompted enter your username and password (these can be found below the console window in the main PWD screen). The UCP web interface should load up in your web browser.
-
-	> **Note**: Once the main UCP screen loads you'll notice there is a red warning bar displayed at the top of the UCP screen, this is an artifact of running in a lab environment. A UCP server configured for a production environment would not display this warning
-	>
-	> ![](./images/red_warning.png)
-
-
-3. From the main dashboard screen, click `Add a Node` on the bottom left of the screen
+1. From the main dashboard in UCP, click `Add a Node` on the bottom left of the screen
 
 	![](./images/add_a_node.png)
 
-4. Select node type "Windows", check the box, that you followed the instructions and copy the text from the dark box shown on the `Add Node` screen. Don't select a custom listen or advertise address.
+1. Select node type "Windows", check the box, that you followed the instructions and copy the text from the dark box shown on the `Add Node` screen.
 
 	> **Note** There is an icon in the upper right corner of the box that you can click to copy the text to your clipboard
-
-	> ![](./images/join_text.png)
-
+	![](./images/join_text.png)
 
 	> **Note**: You may notice that there is a UI component to select `Linux` or `Windows`on the `Add Node` screen. In a production environment where you are starting from scratch there are [a few prerequisite steps] to adding a Windows node. However, we've already done these steps in the PWD environment. So for this lab, just leave the selection on `Linux` and move on to step 2
 
-	![](./images/windows75.png)
+![](./images/windows75.png)
 
-5. Switch back to the PWD interface, and click the name of your Windows node. This will connect the web-based console to your Windows Server 2016 Docker EE host.
+1. We need to run the `docker swarm join` command inside of a Window Server node to add it to the cluster. Open the Remote Desktop Connection to your `worker-win-02` Windows Server VM from earlier.
 
-6. Paste the text from Step 4 at the command prompt in the Windows console. (depending on your browser, this can be tricky: try the "paste" command from the edit menu instead of right clicking or using keyboard shortcuts)
+1. Paste the `docker swarm join` text from UCP into a command prompt or PowerShell window in the remote desktop connection.
 
 	You should see the message `This node joined a swarm as a worker.` indicating you've successfully joined the node to the cluster.
 
-7. Switch back to the UCP server in your web browser and click the `x` in the upper right corner to close the `Add Node` window
+1. Switch back to the UCP server in your web browser and click the `x` in the upper right corner to close the `Add Node` window
 
-8. You will be taken back to the UCP Dashboard. In the left menu bar, click Shared Resources, and select Nodes.
-
-	![](/images/select_nodes.png)
-
-	You should be taken to the `Nodes` screen and will see 4 worker nodes listed at the bottom of your screen.
+1. You should be taken to the `Nodes` screen and will see 3 nodes listed at the bottom of your screen.
 
 	Initially the new worker node will be shown with status `down`. After a minute or two, refresh your web browser to ensure that your Windows worker node has come up as `healthy`
-	
+
 	![](./images/node_listing.png)
 
-Congratulations on adding a Windows node to your UCP cluster. Now you are ready to use the worker in either Swarm or Kubernetes. Next up we'll create a few repositories in Docker Trusted registry.
+Congratulations on adding a Windows node to your UCP cluster. Next, we will create several repositories in Docker Trusted Registry.
 
 ### <a name="task1.3"></a>Task 1.3: Create Three DTR Repositories
 
@@ -171,7 +221,7 @@ Docker Trusted Registry is a special server designed to store and manage your Do
 
 However, before we create the repositories, we do want to restrict access to them. Since we have two distinct app components, a Java web app (with a database), and a .NET API, we want to restrict access to them to the team that develops them, as well as the administrators. To do that, we need to create two users and then two organizations.
 
-1. In the PWD web interface click the `DTR` button on the left side of the screen.
+1. Open DTR from the URL located in the Ouputs section of the Azure Portal's Template Deployment blade that we located earlier, ex. `https://dtr-gf-docker-lab.eastus.cloudapp.azure.com`
 
 	> **Note**: As with UCP before, DTR is also using self-signed certs. It's safe to click through any browser warning you might encounter.
 
@@ -221,7 +271,7 @@ However, before we create the repositories, we do want to restrict access to the
 
 	![](./images/team_with_user.png)
 
-11. Next select the `web` team and select the `Repositories` tab. Select `Add Existing repository` and choose the `java_web`repository. You'll see the `java` account is already selected. Then select `Read/Write` permissions so the `web` team has permissions to push images to this repository. Finally click `save`.
+11. Next select the `web` team and select the `Repositories` tab. Select `Add Existing repository` and choose the `java_web` repository. You'll see the `java` account is already selected. Then select `Read/Write` permissions so the `web` team has permissions to push images to this repository. Finally click `Save`.
 
 	![](./images/add_java_web_to_team.png)
 
@@ -250,20 +300,18 @@ Let's start with the Linux version.
 
 ![](./images/linux75.png)
 
-1. From PWD click on the `worker1` link on the left to connnect your web console to the UCP Linux worker node.
+1. In a terminal window, re-establish the earlier SSH connection to the `worker-linux-02` Azure VM that we tested earlier.
 
-2. Before we do anything, let's configure an environment variable for the DTR URL/DTR hostname. You may remember that the session information from the Play with Docker landing page. Select and copy the the URL for the DTR hostname.
+1. Before continuing, let us configure an environment variable for the DTR URL/DTR hostname. Navigate to the Azure Portal's template deployment output blade. Select and copy the the URL for the DTR hostname.
 
-	![](./images/session-information.png)
-
-3. Set an environment variable `DTR_HOST` using the DTR host name defined on your Play with Docker landing page:
+1. Set an environment variable `DTR_HOST` using the DTR host name defined on your Play with Docker landing page:
 
 	```bash
 	$ export DTR_HOST=<dtr hostname>
 	$ echo $DTR_HOST
 	```
 
-4. Now use git to clone the workshop repository.
+1. Now use git to clone the workshop repository.
 
 	```bash
 	$ git clone https://github.com/dockersamples/hybrid-app.git
@@ -293,7 +341,7 @@ Let's start with the Linux version.
 	$ cd ./hybrid-app/java-app/
 	```
 
-2. Use `docker build` to build your Docker image.
+1. Use `docker build` to build your Docker image.
 
 	```Bash
 	$ docker build -t $DTR_HOST/java/java_web .
@@ -301,18 +349,18 @@ Let's start with the Linux version.
 
 	The `-t` tags the image with a name. In our case, the name indicates which DTR server and under which organization's respository the image will live.
 
-	> **Note**: Feel free to examine the Dockerfile in this directory if you'd like to see how the image is being built.
+	> **Note**: Feel free to examine the Dockerfile in this directory if you'd like to see how the image is being built. Run `cat Dockerfile` or open the file in GitHub via a web browser.
 
-	There will be quite a bit of output. The Dockerfile describes a two-stage build. In the first stage, a Maven base image is used to build the Java app. But to run the app you don't need Maven or any of the JDK stuff that comes with it. So the second stage takes the output of the first stage and puts it in a much smaller Tomcat image.
+	There will be quite a bit of output. The Dockerfile describes a two-stage build. In the first stage, a Maven base image is used to build the Java app. But to run the app you don't need Maven or any of the JDK stuff that comes with it. The second stage takes the output of the first stage and puts it into a much smaller Tomcat image.
 
-3. Log into your DTR server from the command line.
+1. Log into your DTR server from the command line.
  
 	First use the `dotnet_user`, which isn't part of the java organization
 
 	```bash
 	$ docker login $DTR_HOST
-	Username: <your username>
-	Password: <your password>
+	Username: <your dotnet_user username>
+	Password: <your dotnet_user password>
 	Login Succeeded
 	```
 	
@@ -336,7 +384,7 @@ Let's start with the Linux version.
 
 	As you can see, the access control that you established in the [Task 1.3](#task1.3) prevented you from pushing to this repository.	
 
-4. Now try logging in using `java_user`, and then use `docker push` to upload your image up to Docker Trusted Registry.
+1. Now try logging in using `java_user`, and then use `docker push` to upload your image up to Docker Trusted Registry.
 
 	```bash
 	$ docker push $DTR_HOST/java/java_web
@@ -356,43 +404,42 @@ Let's start with the Linux version.
 
 	Success! Because you are using a user name that belongs to the right team in the right organization, you can push your image to DTR.
 
-5. In your web browser head back to your DTR server and click `View Details` next to your `java_web` repo to see the details of the repo.
+1. In your web browser head back to your DTR server and click `View Details` next to your `java_web` repo to see the details of the repo.
 
-	> **Note**: If you've closed the tab with your DTR server, just click the `DTR` button from the PWD page.
+	> **Note**: If you've closed the tab with your DTR server, copy and paste the DTR URL from the Azure Portal output blade into a new web browser tab
 
-6. Click on `Images` from the horizontal menu. Notice that your newly pushed image is now on your DTR.
+1. Click on `Images` from the horizontal menu. Notice that your newly pushed image is now on your DTR.
 
 	![](./images/pushed_image.png)
 
-7. Next, build the MySQL database image. Change into the database directory.
+1. Next, build the MySQL database image. In the SSH session, change into the database directory.
 
-```bash
-	$ cd ../database
-```
+	```bash
+		$ cd ../database
+	```
 
-8. Use `docker build` to build your Docker image.
+1. Use `docker build` to build your Docker image.
 
 	```bash
 	$ docker build -t $DTR_HOST/java/database .
 	```
 
-9. Use `docker push` to upload your image up to Docker Trusted Registry.
+1. Use `docker push` to upload your image up to Docker Trusted Registry.
 	```bash
 	$ docker push $DTR_HOST/java/database
 	```
 
-10. In your web browser head back to your DTR server and click `View Details` next to your `database` repo to see the details of the repo.
+1. In your web browser head back to your DTR server and click `View Details` next to your `database` repo to see the details of the repo.
 
-11. Click on `Images` from the horizontal menu. Notice that your newly pushed image is now on your DTR.
-
-
+1. Click on `Images` from the horizontal menu. Notice that your newly pushed image is now on your DTR.
 
 ### <a name="task2.3"></a> Task 2.3: Deploy the Web App using UCP
+
 ![](./images/linux75.png)
 
 The next step is to run the app in Swarm. As a reminder, the application has two components, the web front-end and the database. In order to connect to the database, the application needs a password. If you were just running this in development you could easily pass the password around as a text file or an environment variable. But in production you would never do that. So instead, we're going to create an encrypted secret. That way access can be strictly controlled.
 
-1. Go back to the first Play with Docker tab. Click on the UCP button. You'll have the same warnings regarding `https` that you have before. Click through those and log in. You'll see the Universal Control Panel dashboard.
+1. Open UCP by copying and pasting the UCP URL hyperlink from the Azure Portal outputs blade. You should see the Universal Control Panel dashboard.
 
 2.  There's a lot here about managing the cluster. You can take a moment to explore around. When you're ready, click on `Swarm` and select `Secrets`.
 
@@ -410,8 +457,8 @@ The next step is to run the app in Swarm. As a reminder, the application has two
 
 6. Now we're going to use the fast way to create your application: `Stacks`. In the left panel, click `Shared Resources`, `Stacks` and then `Create Stack` in the upper right corner.
 
-7. Name your stack `java_web` and select `Swarm Services` for your `Mode`. Below you'll see we've included a `.yml` file. Before you paste that in to the `Compose.yml` edit box, note that you'll need to make a quick change. Each of the images is defined as `<dtr hostname>/java/<something>`. You'll need to change the `<dtr hostname>` to the DTR Hostname found on the Play with Docker landing page for your session. It will look something like this:
-`ip172-18-0-21-baeqqie02b4g00c9skk0.direct.ee-beta2.play-with-docker.com`
+7. Name your stack `java_web` and select `Swarm Services` for your `Mode`. Below you'll see we've included a `.yml` file. Before you paste that in to the `Compose.yml` edit box, note that you'll need to make a quick change. Each of the images is defined as `<dtr hostname>/java/<something>`. You'll need to change the `<dtr hostname>` to the DTR Hostname found on the Azure Portal outputs blade for your environment. It will look something like this:
+`dtr-gf-docker-lab52.eastus.cloudapp.azure.com/java/database`
 You can do that right in the edit box in `UCP` but wanted to make sure you saw that first.
 
 	![](./images/ucp_create_stack.png)
@@ -462,36 +509,41 @@ You can do that right in the edit box in `UCP` but wanted to make sure you saw t
 
 ## <a name="task3"></a>Task 3: Deploy the next version with a Windows node
 
-Now that we've moved the app and updated it, we're going to add in a user sign-in API. For fun, and to show off the cross-platform capabilities of Docker EE, we are going to do it in a Windows container.
+Now that we've moved the app and updated it, we're going to add in a user sign-in API. For fun, and to show off the cross-platform capabilities of Docker EE, we are going to do it in a Windows container with a .NET Framework application.
 
-### <a name="task3.1"></a> Task 3.1: Clone the repository]
+### <a name="task3.1"></a> Task 3.1: Clone the repository
 
 ![](./images/windows75.png)
 
-1. Because this is a Windows container, we have to build it on a Windows host. Switch back to the main Play with Docker page, select the name of the Windows worker. Then clone the repository again onto this host:
+1. Because this is a Windows container, we have to build it on a Windows host. Open the Remote Desktop Connection to `worker-win-02` from earlier. 
+
+1. Open PowerShell, change directory to `C:\` and clone the repository again onto this host:
 
 	```powershell
+	PS C:\User\eeadmin> cd c:\
+
 	PS C:\> git clone https://github.com/dockersamples/hybrid-app.git
 	```
 
-2. Set an environment variable for the DTR host name. Much like you did for the Java app, this will make a few step easier. Copy the DTR host name again and create the environment variable. For instance, if your DTR host was `ip172-18-0-17-bajlvkom5emg00eaner0.direct.ee-beta2.play-with-docker.com` you would type:
+1. Set an environment variable for the DTR host name. Much like you did for the Java app, this will make a few step easier. Copy the DTR host name again and create the environment variable. For instance, if your DTR host was `dtr-gf-docker-lab52.eastus.cloudapp.azure.com` you would type:
 
 	```powershell
-	PS C:\> $env:DTR_HOST="ip172-18-0-17-bajlvkom5emg00eaner0.direct.ee-beta2.play-with-docker.com"
+	PS C:\> $env:DTR_HOST="dtr-gf-docker-lab52.eastus.cloudapp.azure.com"
+	```
 
 ### <a name="task3.2"></a> Task 3.2: Build and Push Windows Images to Docker Trusted Registry
+
 ![](./images/windows75.png)
 
 1. CD into the `c:\hybrid-app\netfx-api` directory. 
 
-	> Note you'll see a `dotnet-api` directory as well. Don't use that directory. That's a .NET Core api that runs on Linux. We'll use that later in the Kubernetes section.
+	> Note you'll see a `dotnet-api` directory as well. Do not use that directory. That's a .NET Core api that runs on Linux. We'll use that later in the Kubernetes section.
 
 	```powershell
 	PS C:\> cd c:\hybrid-app\netfx-api\
 	```
 
-
-2. Use `docker build` to build your Windows image.
+1. Use `docker build` to build your Windows image.
 
 	```powershell
 	PS C:\hybrid-app\netfx-api> docker build -t $env:DTR_HOST/dotnet/dotnet_api .
@@ -548,9 +600,10 @@ Now that we've moved the app and updated it, we're going to add in a user sign-i
 6. You may check your repositories in the DTR web interface to see the newly pushed image.
 
 ### <a name="task3.3"></a> Task 3.3: Deploy the Java web app
+
 ![](./images/linux75.png)
 
-1. First we need to update the Java web app so it'll take advantage of the .NET API. Switch back to `worker1` and change directories to the `java-app-v2` directory. Repeat steps 1,2, and 4 from Task 2.2 but add a tag `:2` to your build and pushes:
+1. First we need to update the Java web app so it'll take advantage of the .NET API. Switch back to `worker-linux-02` and change directories to the `java-app-v2` directory. Repeat steps 1,2, and 4 from Task 2.2 but add a tag `:2` to your build and pushes:
 
 	```bash
 	$ docker build -t $DTR_HOST/java/java_web:2 .
@@ -618,7 +671,7 @@ Docker EE lets you choose the orchestrator to use to deploy and manage your appl
 
 For now Kubernetes does not support Windows workloads in production, so we will start by porting the .NET part of our application to a Linux container using .NET Core.
 
-1. From the Play with Docker landing page, click on `worker1` and CD into the `hybrid-app/dotnet-api` directory. 
+1. In your SSH connection to `worker-linux-02`, CD into the `hybrid-app/dotnet-api` directory. 
 
 	```bash
 	$ cd ~/hybrid-app/dotnet-api/
@@ -695,7 +748,7 @@ We'll use a Docker Compose file to instantiate our application, and it's the sam
 
 Let's look at the Docker Compose file in `app/docker-stack.yml`.
 
-Change the images for the dotnet-api and java-app services for the ones we just built. And remember to change `<dtr hostname>` to the long DTR hostname listed on the landing page for your Play with Docker instance.
+Change the images for the dotnet-api and java-app services for the ones we just built. And remember to change `<dtr hostname>` to the long DTR hostname listed on the Azure Portal template deployment output blade for your environment.
 
 ```yaml
 version: '3.3'
@@ -840,6 +893,6 @@ Security is crucial for all organizations. And it is a complicated topic, too in
 
 ## Conclusion
 
-In this lab we've looked how Docker EE can help you manage both Linux and Windows workloads whether they be traditional apps you've modernized or newer cloud-native apps, leveraging Swarm or Kubernetes for orchestration.
+In this lab we've looked how Docker EE and Microsoft Azure can help you manage both Linux and Windows workloads whether they be traditional apps you've modernized or newer cloud-native apps, leveraging Swarm or Kubernetes for orchestration.
 
 You can find more information on Docker EE at [http://www.docker.com](http://www.docker.com/enterprise-edition) as well as continue exploring using our hosted trial at [https://dockertrial.com](https://dockertrial.com)
