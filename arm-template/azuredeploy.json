@@ -382,26 +382,7 @@
         "backendAddressPools": [{
           "name": "LoadBalancerBackEnd"
         }],
-        "loadBalancingRules": [{
-            "name": "tcp80",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIpConfigurations', 'dtr', 'LoadBalancerFrontEnd')]"
-              },
-              "frontendPort": 80,
-              "backendPort": 80,
-              "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 4,
-              "protocol": "Tcp",
-              "loadDistribution": "Default",
-              "backendAddressPool": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')]"
-              },
-              "probe": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', 'dtr', 'tcp80')]"
-              }
-            }
-          },
+        "loadBalancingRules": [
           {
             "name": "tcp443",
             "properties": {
@@ -421,51 +402,14 @@
                 "id": "[resourceId('Microsoft.Network/loadBalancers/probes', 'dtr', 'tcp443')]"
               }
             }
-          },
-          {
-            "name": "tcp8080",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIpConfigurations', 'dtr', 'LoadBalancerFrontEnd')]"
-              },
-              "frontendPort": 8080,
-              "backendPort": 8080,
-              "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 4,
-              "protocol": "Tcp",
-              "loadDistribution": "Default",
-              "backendAddressPool": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')]"
-              },
-              "probe": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', 'dtr', 'tcp8080')]"
-              }
-            }
           }
         ],
-        "probes": [{
-            "name": "tcp80",
-            "properties": {
-              "protocol": "Tcp",
-              "port": 80,
-              "intervalInSeconds": 5,
-              "numberOfProbes": 2
-            }
-          },
+        "probes": [
           {
             "name": "tcp443",
             "properties": {
               "protocol": "Tcp",
               "port": 443,
-              "intervalInSeconds": 5,
-              "numberOfProbes": 2
-            }
-          },
-          {
-            "name": "tcp8080",
-            "properties": {
-              "protocol": "Tcp",
-              "port": 8080,
               "intervalInSeconds": 5,
               "numberOfProbes": 2
             }
