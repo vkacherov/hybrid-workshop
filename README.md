@@ -891,6 +891,12 @@ Security is crucial for all organizations. And it is a complicated topic, too in
 
 * Confirm that you are setting the environmental variable DTR_HOST to the DTR hostname.
 
+* When deploying the ARM Template, confirm the Azure Resource Group name is globally unique (it is used in DNS entries). 
+	
+	Good: `docker-ee-gf`, `ee-lab142`, `docker0412`. 
+	
+	Bad: `docker`, `docker-ee`, `docker-lab`. 
+
 ## Conclusion
 
 In this lab we've looked how Docker EE and Microsoft Azure can help you manage both Linux and Windows workloads whether they be traditional apps you've modernized or newer cloud-native apps, leveraging Swarm or Kubernetes for orchestration.
