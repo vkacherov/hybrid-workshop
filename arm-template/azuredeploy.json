@@ -28,7 +28,7 @@
       "type": "object",
       "defaultValue": {
         "adminUsername": "eeadmin",
-        "adminPassword": "Docker123!"
+        "adminPassword": "DockerEE123!"
       }
     },
     "versions": {

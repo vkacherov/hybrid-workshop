@@ -11,12 +11,12 @@ readonly DTR_FQDN=$2
 # Version of DTR to be installed
 readonly DTR_VERSION=$3
 
-# Node to install DTR on
+# Node to configure DTR (current)
 readonly UCP_NODE=$(cat /etc/hostname)
 
 # UCP Admin credentials
-readonly UCP_USERNAME="admin"
-readonly UCP_PASSWORD='Docker123!'
+readonly UCP_USERNAME="eeadmin"
+readonly UCP_PASSWORD='DockerEE123!'
 
 checkDTR() {
 
@@ -61,6 +61,7 @@ joinDTR() {
 
     # Get DTR Replica ID
     REPLICA_ID=$(curl --request GET --insecure --silent --url "https://${DTR_FQDN}/api/v0/meta/settings" -u "${UCP_USERNAME}":"${UCP_PASSWORD}" --header 'Accept: application/json' | jq --raw-output .replicaID)
+    
     echo "joinDTR: Joining DTR with Replica ID ${REPLICA_ID}"
 
     # Join an existing Docker Trusted Registry
