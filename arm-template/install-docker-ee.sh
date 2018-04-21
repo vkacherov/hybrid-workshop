@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Install Docker Enterprise Edition Engine on Ubuntu
 
