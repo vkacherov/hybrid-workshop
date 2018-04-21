@@ -20,6 +20,9 @@ readonly UCP_PASSWORD='DockerEE123!'
 
 checkDTR() {
 
+    # Generate certificates for use with UCP
+    # letsencrypt
+
     # Check if DTR exists by attempting to hit its load balancer
     STATUS=$(curl --request GET --url "https://${DTR_FQDN}/_ping" --insecure --silent --output /dev/null -w '%{http_code}' --max-time 5)
     
@@ -69,11 +72,44 @@ joinDTR() {
         --rm \
         docker/dtr:${DTR_VERSION} join \
         --existing-replica-id "${REPLICA_ID}" \
-        --ucp-url "https://${UCP_FQDN}" \
+        --ucp-insecure-tls \
         --ucp-node "${UCP_NODE}" \
-        --ucp-username "${UCP_USERNAME}" \
         --ucp-password "${UCP_PASSWORD}" \
-        --ucp-insecure-tls
+        --ucp-url "https://${UCP_FQDN}" \
+        --ucp-username "${UCP_USERNAME}" 
+
+}
+
+letsencrypt() {
+
+    echo "letsencrypt: beginning generation of certificates"
+
+    # Generate certificate with certbot
+    docker run \
+    --rm \
+    --publish 443:443 \
+    --publish 80:80 \
+    --name letsencrypt \
+    --volume "/etc/letsencrypt:/etc/letsencrypt" \
+    --volume "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+    certbot/certbot:latest \
+    certonly \
+    --agree-tos \
+    -d "${UCP_FQDN}" \
+    -n \
+    --register-unsafely-without-email \
+    --standalone \
+
+    # Wait for letsencrypt to finish before proceeding
+    docker wait letsencrypt
+
+    # Make a volume and copy in certificates 
+    docker volume create ucp-controller-server-certs
+    cp /etc/letsencrypt/live/"${UCP_FQDN}"/fullchain.pem /var/lib/docker/volumes/ucp-controller-server-certs/_data/cert.pem
+    cp /etc/letsencrypt/live/"${UCP_FQDN}"/privkey.pem /var/lib/docker/volumes/ucp-controller-server-certs/_data/key.pem
+    curl -o /var/lib/docker/volumes/ucp-controller-server-certs/_data/ca.pem https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
+
+    echo "letsencrypt: finished generating certificates"
 
 }
 

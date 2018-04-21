@@ -27,7 +27,7 @@ sudo apt-get -qq install jq -y
 checkUCP() {
 
     # Check if UCP exists by attempting to hit its load balancer
-    STATUS=$(curl --request GET --url "https://${UCP_FQDN}" --insecure --silent --output /dev/null -w '%{http_code}' --max-time 5)
+    STATUS=$(curl --request GET --url "https://${UCP_FQDN}/_ping" --insecure --silent --output /dev/null -w '%{http_code}' --max-time 5)
     
     echo "checkUCP: API status for ${UCP_FQDN} returned as: ${STATUS}"
 
@@ -43,6 +43,9 @@ checkUCP() {
 
 installUCP() {
     
+    # Generate certificates for use with UCP
+    letsencrypt
+
     echo "installUCP: Installing Docker Universal Control Plane (UCP)"
 
     # Additional installation for Azure
@@ -57,10 +60,11 @@ installUCP() {
         docker/ucp:"${UCP_VERSION}" install \
         --admin-username "${UCP_ADMIN}" \
         --admin-password "${UCP_PASSWORD}" \
+        --cloud-provider Azure \
         --san "${UCP_FQDN}" \
-        --external-service-lb "${APPS_LB_FQDN}" \
         --pod-cidr <ip-address-range> \
-        --cloud-provider Azure
+        --external-server-cert \
+        --external-service-lb "${APPS_LB_FQDN}"
 
     # Wait for node to reach a ready state
     until [ $(curl --request GET --url "https://${UCP_FQDN}/_ping" --insecure --silent --header 'Accept: application/json' | grep OK) ]
@@ -69,8 +73,7 @@ installUCP() {
         sleep 5
     done
 
-    echo "installUCP: Cluster's ping returned a ready state"
-
+    echo "installUCP: Cluster's healthcheck returned a ready state"
     echo "installUCP: Finished installing Docker Universal Control Plane (UCP)"
 
 }
@@ -106,6 +109,39 @@ joinUCP() {
     done
 
     echo "joinUCP: Finished joining node to UCP"
+
+}
+
+letsencrypt() {
+
+    echo "letsencrypt: beginning generation of certificates"
+
+    # Generate certificate with certbot
+    docker run \
+    --rm \
+    --publish 443:443 \
+    --publish 80:80 \
+    --name letsencrypt \
+    --volume "/etc/letsencrypt:/etc/letsencrypt" \
+    --volume "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+    certbot/certbot:latest \
+    certonly \
+    --agree-tos \
+    -d "${UCP_FQDN}" \
+    -n \
+    --register-unsafely-without-email \
+    --standalone \
+
+    # Wait for letsencrypt to finish before proceeding
+    docker wait letsencrypt
+
+    # Make a volume and copy in certificates 
+    docker volume create ucp-controller-server-certs
+    cp /etc/letsencrypt/live/"${UCP_FQDN}"/fullchain.pem /var/lib/docker/volumes/ucp-controller-server-certs/_data/cert.pem
+    cp /etc/letsencrypt/live/"${UCP_FQDN}"/privkey.pem /var/lib/docker/volumes/ucp-controller-server-certs/_data/key.pem
+    curl -o /var/lib/docker/volumes/ucp-controller-server-certs/_data/ca.pem https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
+
+    echo "letsencrypt: finished generating certificates"
 
 }
 
