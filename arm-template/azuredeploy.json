@@ -590,10 +590,10 @@
               "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
               "publicIPAddress": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('dtr-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
               "subnet": {
-                "id": "[variables('managers').subnet]"
+                "id": "[variables('dtr').subnet]"
               },
               "loadBalancerBackendAddressPools": [{
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')]"
               }]
             }
           }
@@ -627,10 +627,10 @@
               "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
               "publicIPAddress": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('worker-linux-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
               "subnet": {
-                "id": "[variables('managers').subnet]"
+                "id": "[variables('workers-linux').subnet]"
               },
               "loadBalancerBackendAddressPools": [{
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'apps', 'LoadBalancerBackEnd')]"
               }]
             }
           }
