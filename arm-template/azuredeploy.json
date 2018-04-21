@@ -555,9 +555,7 @@
               "subnet": {
                 "id": "[variables('managers').subnet]"
               },
-              "loadBalancerBackendAddressPools": [{
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
-              }]
+              "loadBalancerBackendAddressPools": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')), '\"}')), json('null'))]"
             }
           }
         }]
@@ -592,9 +590,7 @@
               "subnet": {
                 "id": "[variables('dtr').subnet]"
               },
-              "loadBalancerBackendAddressPools": [{
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')]"
-              }]
+              "loadBalancerBackendAddressPools": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')), '\"}')), json('null'))]"
             }
           }
         }]
@@ -629,9 +625,7 @@
               "subnet": {
                 "id": "[variables('workers-linux').subnet]"
               },
-              "loadBalancerBackendAddressPools": [{
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'apps', 'LoadBalancerBackEnd')]"
-              }]
+              "loadBalancerBackendAddressPools": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'apps', 'LoadBalancerBackEnd')), '\"}')), json('null'))]"
             }
           }
         }]
