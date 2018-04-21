@@ -19,9 +19,9 @@
     "scripts": {
       "type": "object",
       "defaultValue": {
-        "installDockerEE": "https://raw.githubusercontent.com/Microsoft/Docker-EE-on-Azure-Stack-Deployment/master/multi-node/install-docker-ee.sh",
-        "installUCP": "https://raw.githubusercontent.com/Microsoft/Docker-EE-on-Azure-Stack-Deployment/master/multi-node/install-ucp.sh",
-        "installDTR": "https://raw.githubusercontent.com/Microsoft/Docker-EE-on-Azure-Stack-Deployment/master/multi-node/install-dtr.sh"
+        "installDockerEE": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-docker-ee.sh",
+        "installUCP": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-ucp.sh",
+        "installDTR": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-dtr.sh"
       }
     },
     "credentials": {
@@ -56,7 +56,7 @@
         "subnets": [{
           "name": "nodes",
           "properties": {
-            "addressPrefix": "10.0.0.0/24"
+            "addressPrefix": "10.0.0.0/18"
           }
         }]
       }
@@ -382,39 +382,35 @@
         "backendAddressPools": [{
           "name": "LoadBalancerBackEnd"
         }],
-        "loadBalancingRules": [
-          {
-            "name": "tcp443",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIpConfigurations', 'dtr', 'LoadBalancerFrontEnd')]"
-              },
-              "frontendPort": 443,
-              "backendPort": 443,
-              "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 4,
-              "protocol": "Tcp",
-              "loadDistribution": "Default",
-              "backendAddressPool": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')]"
-              },
-              "probe": {
-                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', 'dtr', 'tcp443')]"
-              }
+        "loadBalancingRules": [{
+          "name": "tcp443",
+          "properties": {
+            "frontendIPConfiguration": {
+              "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIpConfigurations', 'dtr', 'LoadBalancerFrontEnd')]"
+            },
+            "frontendPort": 443,
+            "backendPort": 443,
+            "enableFloatingIP": false,
+            "idleTimeoutInMinutes": 4,
+            "protocol": "Tcp",
+            "loadDistribution": "Default",
+            "backendAddressPool": {
+              "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')]"
+            },
+            "probe": {
+              "id": "[resourceId('Microsoft.Network/loadBalancers/probes', 'dtr', 'tcp443')]"
             }
           }
-        ],
-        "probes": [
-          {
-            "name": "tcp443",
-            "properties": {
-              "protocol": "Tcp",
-              "port": 443,
-              "intervalInSeconds": 5,
-              "numberOfProbes": 2
-            }
+        }],
+        "probes": [{
+          "name": "tcp443",
+          "properties": {
+            "protocol": "Tcp",
+            "port": 443,
+            "intervalInSeconds": 5,
+            "numberOfProbes": 2
           }
-        ]
+        }]
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', 'dtr')]"
@@ -555,9 +551,7 @@
             "name": "[concat('ipconfig', copyIndex('ipConfigurations'))]",
             "properties": {
               "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat('manager-', padLeft(copyIndex('NICCopy', 1), 2, '0')))]"
-              },
+              "publicIPAddress": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('manager-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
               "subnet": {
                 "id": "[variables('managers').subnet]"
               },
@@ -587,19 +581,21 @@
         "count": "[variables('dtr').instances]"
       },
       "properties": {
-        "ipConfigurations": [{
-          "name": "ipconfig",
-          "properties": {
-            "primary": "true",
-            "publicIPAddress": {
-              "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat('dtr-', padLeft(copyIndex(1), 2, '0')))]"
-            },
-            "subnet": {
-              "id": "[variables('managers').subnet]"
-            },
-            "loadBalancerBackendAddressPools": [{
-              "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'dtr', 'LoadBalancerBackEnd')]"
-            }]
+        "copy": [{
+          "name": "ipConfigurations",
+          "count": 128,
+          "input": {
+            "name": "[concat('ipconfig', copyIndex('ipConfigurations'))]",
+            "properties": {
+              "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
+              "publicIPAddress": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('dtr-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
+              "subnet": {
+                "id": "[variables('managers').subnet]"
+              },
+              "loadBalancerBackendAddressPools": [{
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
+              }]
+            }
           }
         }]
       },
@@ -622,19 +618,21 @@
         "count": "[variables('workers-linux').instances]"
       },
       "properties": {
-        "ipConfigurations": [{
-          "name": "ipconfig",
-          "properties": {
-            "primary": "true",
-            "publicIPAddress": {
-              "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat('worker-linux-', padLeft(copyIndex(1), 2, '0')))]"
-            },
-            "subnet": {
-              "id": "[variables('managers').subnet]"
-            },
-            "loadBalancerBackendAddressPools": [{
-              "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'apps', 'LoadBalancerBackEnd')]"
-            }]
+        "copy": [{
+          "name": "ipConfigurations",
+          "count": 128,
+          "input": {
+            "name": "[concat('ipconfig', copyIndex('ipConfigurations'))]",
+            "properties": {
+              "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
+              "publicIPAddress": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('worker-linux-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
+              "subnet": {
+                "id": "[variables('managers').subnet]"
+              },
+              "loadBalancerBackendAddressPools": [{
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
+              }]
+            }
           }
         }]
       },
@@ -708,7 +706,7 @@
               "[parameters('scripts').installDockerEE]",
               "[parameters('scripts').installUCP]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Manager ', parameters('versions').ucp)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Manager ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
           }
         }
       }]
@@ -782,7 +780,7 @@
               "[parameters('scripts').installDockerEE]",
               "[parameters('scripts').installUCP]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Manager ', parameters('versions').ucp)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Manager ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
           }
         }
       }]
@@ -857,7 +855,7 @@
               "[parameters('scripts').installUCP]",
               "[parameters('scripts').installDTR]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' && sh install-dtr.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn, ' ', parameters('versions').dtr)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix, ' && sh install-dtr.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn, ' ', parameters('versions').dtr)]"
           }
         }
       }]
@@ -931,7 +929,7 @@
               "[parameters('scripts').installDockerEE]",
               "[parameters('scripts').installUCP]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
           }
         }
       }]

@@ -891,11 +891,17 @@ Security is crucial for all organizations. And it is a complicated topic, too in
 
 * Confirm that you are setting the environmental variable DTR_HOST to the DTR hostname.
 
-* When deploying the ARM Template, confirm the Azure Resource Group name is globally unique (it is used in DNS entries). 
+* When deploying the ARM Template, set the Azure Resource Group name with random characters to ensure it is globally unique. This RG name is used to build DNS entries, and if it conflicts with an existing resource in Azure with the same name there will be errors.. 
 	
 	Good: `docker-ee-gf`, `ee-lab142`, `docker0412`. 
 	
 	Bad: `docker`, `docker-ee`, `docker-lab`. 
+
+* The Azure Load Balancer requires a given port to be explicitly opened via a routing rule and probe. Ports `80`, `443` and `8080` are pre-opened for the lab, but if you publish a container with a port outside of this it will not be resolveable until also updating the Load Balancer. Example: publishing a service to port `30001` would require an additional LB routing rule and probe.
+
+* The hostname routing feature of Docker EE's Interlock 2.0 system typically allow you to use a DNS name rather than a port number to load applications. However, this requires additonal setup not done for the lab - setting up a DNS Wildcard entry pointing at the apps load balancer.
+
+* This lab provisions a highly-available cluster of 10 virtual machine nodes. Azure Subscriptions container a quota of number of VM cores; if you hit an error during template deployment related to cores quota please remove VMs from other resource groups. This lab has not been tested on other sized Docker EE clusters.
 
 ## Conclusion
 

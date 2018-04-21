@@ -14,6 +14,9 @@ readonly NODE_ROLE=$3
 # Version of UCP to be installed
 readonly UCP_VERSION=$4
 
+# CIDR Range of Subnet containing nodes
+readonly SUBNET_IP_RANGE=$5
+
 # Name of current node
 readonly NODE_NAME=$(cat /etc/hostname)
 
@@ -62,7 +65,7 @@ installUCP() {
         --admin-password "${UCP_PASSWORD}" \
         --cloud-provider Azure \
         --san "${UCP_FQDN}" \
-        --pod-cidr <ip-address-range> \
+        --pod-cidr "${SUBNET_IP_RANGE}" \
         --external-server-cert \
         --external-service-lb "${APPS_LB_FQDN}"
 
