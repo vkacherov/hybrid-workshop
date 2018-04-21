@@ -130,7 +130,7 @@ letsencrypt() {
     certbot/certbot:latest \
     certonly \
     --agree-tos \
-    -d "${UCP_FQDN}" \
+    ---domains "${UCP_FQDN}" \
     -n \
     --register-unsafely-without-email \
     --standalone \
