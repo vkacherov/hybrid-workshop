@@ -50,12 +50,10 @@ installUCP() {
     letsencrypt
 
     echo "installUCP: Installing Docker Universal Control Plane (UCP)"
-
-    # Additional installation for Azure
-    # https://docs.docker.com/ee/ucp/admin/install/install-on-azure/
-    docker swarm init
+    echo "installUCP: Subnet CIDR is ${SUBNET_IP_RANGE}"
 
     # Install Universal Control Plane
+    # https://docs.docker.com/ee/ucp/admin/install/install-on-azure/
     docker run \
         --rm \
         --name ucp \
@@ -131,9 +129,9 @@ letsencrypt() {
     certonly \
     --agree-tos \
     ---domains "${UCP_FQDN}" \
-    -n \
+    --noninteractive \
     --register-unsafely-without-email \
-    --standalone \
+    --standalone 
 
     # Wait for letsencrypt to finish before proceeding
     docker wait letsencrypt
