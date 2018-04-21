@@ -28,9 +28,6 @@ checkDTR() {
     
     echo "checkDTR: API status for ${DTR_FQDN} returned as: ${STATUS}"
     
-    # Pre-Pull Images
-    docker run --rm docker/dtr:"${DTR_VERSION}" images --list | xargs -L 1 docker pull
-
     if [ "$STATUS" -eq 200 ]; then
         echo "checkDTR: Successfully queried the DTR API. DTR is installed. Joining node to existing cluster."
         joinDTR
@@ -44,6 +41,9 @@ checkDTR() {
 installDTR() {
 
     echo "installDTR: Installing ${DTR_VERSION} Docker Trusted Registry (DTR) on ${UCP_NODE} for UCP at ${UCP_FQDN} and with a DTR Load Balancer at ${DTR_FQDN}"
+
+    # Pre-Pull Images
+    docker run --rm docker/dtr:"${DTR_VERSION}" images | xargs -L 1 docker pull
 
     # Install Docker Trusted Registry
     docker run \
@@ -66,6 +66,9 @@ joinDTR() {
     REPLICA_ID=$(curl --request GET --insecure --silent --url "https://${DTR_FQDN}/api/v0/meta/settings" -u "${UCP_USERNAME}":"${UCP_PASSWORD}" --header 'Accept: application/json' | jq --raw-output .replicaID)
     
     echo "joinDTR: Joining DTR with Replica ID ${REPLICA_ID}"
+
+    # Pre-Pull Images
+    docker run --rm docker/dtr:"${DTR_VERSION}" images | xargs -L 1 docker pull
 
     # Join an existing Docker Trusted Registry
     docker run \
