@@ -46,6 +46,9 @@ checkUCP() {
 
 installUCP() {
     
+    # Initialize a Swarm
+    docker swarm init
+
     # Generate certificates for use with UCP
     letsencrypt
 
@@ -128,7 +131,7 @@ letsencrypt() {
     certbot/certbot:latest \
     certonly \
     --agree-tos \
-    ---domains "${UCP_FQDN}" \
+    --domains "${UCP_FQDN}" \
     --noninteractive \
     --register-unsafely-without-email \
     --standalone 
