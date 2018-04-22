@@ -38,7 +38,7 @@ checkDTR() {
 installDTR() {
 
     # Generate certificates for use with DTR
-    # letsencrypt
+    letsencrypt
 
     echo "installDTR: Installing ${DTR_VERSION} Docker Trusted Registry (DTR) on ${UCP_NODE} for UCP at ${UCP_FQDN} and with a DTR Load Balancer at ${DTR_FQDN}"
 
