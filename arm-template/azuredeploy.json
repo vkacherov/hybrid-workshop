@@ -36,6 +36,7 @@
       "type": "object",
       "defaultValue": {
         "engine": "stable-17.06",
+        "windows-engine": "17.06.2-ee-8",
         "ucp": "latest",
         "dtr": "latest"
       }
@@ -748,8 +749,7 @@
       "type": "Microsoft.Compute/virtualMachines",
       "copy": {
         "name": "VMCopy",
-        "count": "[variables('managers').instances]",
-        "mode": "Serial"
+        "count": "[variables('managers').instances]"
       },
       "name": "[concat('manager-', padLeft(copyIndex(1), 2, '0'))]",
       "apiVersion": "[variables('api').virtualMachines]",
@@ -797,6 +797,7 @@
         "location": "[resourceGroup().location]",
         "apiVersion": "[variables('api').virtualMachines]",
         "dependsOn": [
+          "[if(equals(copyIndex(), 0), resourceId('Microsoft.Compute/virtualMachines', concat('manager-', padLeft(copyIndex(1), 2, '0'))), resourceId('Microsoft.Compute/virtualMachines/extensions', 'manager-01', 'InstallDockerEE'))]",
           "[resourceId('Microsoft.Compute/virtualMachines', concat('manager-', padLeft(copyIndex(1), 2, '0')))]",
           "[resourceId('Microsoft.Network/publicIPAddresses', 'ucp')]"
         ],
@@ -866,6 +867,7 @@
       ],
       "resources": [{
         "name": "InstallDockerEE",
+        "condition": false,
         "type": "extensions",
         "location": "[resourceGroup().location]",
         "apiVersion": "[variables('api').virtualMachines]",
@@ -1034,7 +1036,7 @@
             "fileUris": [
               "[parameters('scripts').installUCPPowershell]"
             ],
-            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"', parameters('credentials').adminUsername, '\" -Password \"', parameters('credentials').adminPassword, '\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\"')]"
+            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"', parameters('credentials').adminUsername, '\" -Password \"', parameters('credentials').adminPassword, '\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\" -Engine_Version ', parameters('versions').windows-engine]"
           }
         }
       }]
