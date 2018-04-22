@@ -22,7 +22,7 @@
         "installDockerEE": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-docker-ee.sh",
         "installUCP": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-ucp.sh",
         "installDTR": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-dtr.sh",
-        "installUCPPowershell": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-ucp.ps1"        
+        "installUCPPowershell": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-ucp.ps1"
       }
     },
     "credentials": {
@@ -35,8 +35,10 @@
     "versions": {
       "type": "object",
       "defaultValue": {
-        "engine": "stable-17.06",
-        "windows-engine": "17.06.2-ee-8",
+        "engine": {
+          "linux": "stable-17.06",
+          "windows": "17.06.2-ee-8"
+        },
         "ucp": "latest",
         "dtr": "latest"
       }
@@ -814,7 +816,7 @@
               "[parameters('scripts').installDockerEE]",
               "[parameters('scripts').installUCP]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Manager ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine.linux, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Manager ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
           }
         }
       }]
@@ -890,7 +892,7 @@
               "[parameters('scripts').installUCP]",
               "[parameters('scripts').installDTR]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix, ' && sh install-dtr.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn, ' ', parameters('versions').dtr)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh ', parameters('dockerEEURL'), ' ', parameters('versions').engine.linux, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix, ' && sh install-dtr.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn, ' ', parameters('versions').dtr)]"
           }
         }
       }]
@@ -964,7 +966,7 @@
               "[parameters('scripts').installDockerEE]",
               "[parameters('scripts').installUCP]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine.linux, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
           }
         }
       }]
@@ -1036,7 +1038,7 @@
             "fileUris": [
               "[parameters('scripts').installUCPPowershell]"
             ],
-            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"', parameters('credentials').adminUsername, '\" -Password \"', parameters('credentials').adminPassword, '\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\" -Engine_Version ', parameters('versions').windows-engine]"
+            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"', parameters('credentials').adminUsername, '\" -Password \"', parameters('credentials').adminPassword, '\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\" -Engine_Version \"', parameters('versions').engine.windows, '\"')]"
           }
         }
       }]

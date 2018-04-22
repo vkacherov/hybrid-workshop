@@ -9,9 +9,9 @@ param (
   [string]$UCP_Version = "latest"
 )
 
-# Join node if not in a Swarm
-If ((docker info -f '{{.Swarm.LocalNodeState}}') -eq 'active') {
-  Write-Output "Node is currently in a Swarm. Skipping join process"
+function Check-Engine {
+
+  Write-Output "Checking Engine Version"
 
   # Ensure installed engine is desired engine
   $Installed_Engine_Version=(docker version -f '{{.Server.Version}}')
@@ -20,20 +20,47 @@ If ((docker info -f '{{.Swarm.LocalNodeState}}') -eq 'active') {
       Write-Output "Installed engine version matches specified engine version"
   }
   else {
-      Write-Output "Installed engine does not match specified engien version"
-      Write-Output "Updating engine version"
-      Install-Package -Name docker -ProviderName DockerMsftProvider -Update -Force -RequiredVersion $Engine_Version
+
+    Write-Output "Installed engine does not match specified engine version"
+    Write-Output "Updating engine version"
+
+    Stop-Service docker
+    Install-Package -Name docker -ProviderName DockerMsftProvider -Update -Force -RequiredVersion $Engine_Version
+    Restart-Service docker
+    Prepare-Node
+    Pre-Pull-Images
+
   }
 
 }
-Else {
-  Write-Output "Node is not currently in a Swarm. Joining to Swarm at $UCP_FQDN"
+
+function Check-Swarm {
+
+  # Join node if not in a Swarm
+  If ((docker info -f '{{.Swarm.LocalNodeState}}') -eq 'active') {
+    Write-Output "Node is currently in a Swarm. Skipping join process"
+    Check-Engine
+  }
+  Else {
+    Write-Output "Node is not currently in a Swarm. Joining to Swarm at $UCP_FQDN"
+    Join-Swarm
+  }
+
+}
+
+function Prepare-Node {
 
   # Setup node to work with UCP
   docker image pull docker/ucp-agent-win:$UCP_Version
   docker image pull docker/ucp-dsinfo-win:$UCP_Version
   $script = [ScriptBlock]::Create((docker run --rm docker/ucp-agent-win:$UCP_Version windows-script | Out-String))
   Invoke-Command $script
+
+}
+
+function Join-Swarm {
+
+  Prepare-Node
 
   # Allow queries against self-signed certificates in UCP
   [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
@@ -84,6 +111,7 @@ Else {
   # Join Swarm
   Try {
     docker swarm join --token $UCP_JOIN_TOKEN_WORKER $UCP_MANAGER_ADDRESS
+    Pre-Pull-Images
   }
   Catch {
     Write-Error "Unable to join node to Swarm"
@@ -92,8 +120,18 @@ Else {
 
 }
 
-# Pre-Pull images used in the lab
-docker pull microsoft/iis:latest
-docker pull microsoft/aspnetcore-build:latest
-docker pull microsoft/aspnetcore:latest
+function Pre-Pull-Images {
 
+  # Pre-Pull images used in the lab
+  docker pull microsoft/iis:latest
+  docker pull microsoft/aspnetcore-build:latest
+  docker pull microsoft/aspnetcore:latest
+
+}
+
+function Main {
+  Start-Service docker
+  Check-Swarm
+}
+
+Main

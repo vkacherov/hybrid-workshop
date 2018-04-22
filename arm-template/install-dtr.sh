@@ -15,7 +15,7 @@ readonly DTR_VERSION=$3
 readonly UCP_NODE=$(cat /etc/hostname)
 
 # UCP Admin credentials
-readonly UCP_USERNAME="eeadmin"
+readonly UCP_USERNAME='eeadmin'
 readonly UCP_PASSWORD='DockerEE123!'
 
 checkDTR() {
@@ -48,13 +48,15 @@ installDTR() {
     # Install Docker Trusted Registry
     docker run \
         --rm \
-        docker/dtr:${DTR_VERSION} install \
+        docker/dtr:"${DTR_VERSION}" install \
+        --dtr-ca "$(cat /etc/letsencrypt/live/"${DTR_FQDN}"/ca.pem)" \
+        --dtr-cert "$(cat /etc/letsencrypt/live/"${DTR_FQDN}"/fullchain.pem)" \
+        --dtr-key "$(cat /etc/letsencrypt/live/"${DTR_FQDN}"/privkey.pem)" \
         --dtr-external-url "https://${DTR_FQDN}" \
-        --ucp-insecure-tls \
         --ucp-url "https://${UCP_FQDN}" \
         --ucp-node "${UCP_NODE}" \
         --ucp-username "${UCP_USERNAME}" \
-        --ucp-password "${UCP_PASSWORD}" \
+        --ucp-password "${UCP_PASSWORD}"
 
     echo "installDTR: Finished installing Docker Trusted Registry (DTR)"
 
@@ -73,7 +75,7 @@ joinDTR() {
     # Join an existing Docker Trusted Registry
     docker run \
         --rm \
-        docker/dtr:${DTR_VERSION} join \
+        docker/dtr:"${DTR_VERSION}" join \
         --existing-replica-id "${REPLICA_ID}" \
         --ucp-insecure-tls \
         --ucp-node "${UCP_NODE}" \
@@ -112,17 +114,12 @@ letsencrypt() {
     --agree-tos \
     --domains "${DTR_FQDN}" \
     --noninteractive \
+    --preferred-challenges http \
     --register-unsafely-without-email \
-    --standalone \
+    --standalone
 
-    # Wait for letsencrypt to finish before proceeding
-    docker wait letsencrypt
-
-    # Make a volume and copy in certificates 
-    docker volume create ucp-controller-server-certs
-    cp /etc/letsencrypt/live/"${UCP_FQDN}"/fullchain.pem /var/lib/docker/volumes/ucp-controller-server-certs/_data/cert.pem
-    cp /etc/letsencrypt/live/"${UCP_FQDN}"/privkey.pem /var/lib/docker/volumes/ucp-controller-server-certs/_data/key.pem
-    curl -o /var/lib/docker/volumes/ucp-controller-server-certs/_data/ca.pem https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
+    # Store letsencrypt CA 
+    curl -o /etc/letsencrypt/live/"${DTR_FQDN}"/ca.pem https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
 
     echo "letsencrypt: finished generating certificates"
 
