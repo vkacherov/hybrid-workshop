@@ -20,9 +20,6 @@ readonly UCP_PASSWORD='DockerEE123!'
 
 checkDTR() {
 
-    # Generate certificates for use with UCP
-    # letsencrypt
-
     # Check if DTR exists by attempting to hit its load balancer
     STATUS=$(curl --request GET --url "https://${DTR_FQDN}/_ping" --insecure --silent --output /dev/null -w '%{http_code}' --max-time 5)
     
@@ -40,6 +37,9 @@ checkDTR() {
 
 installDTR() {
 
+    # Generate certificates for use with DTR
+    # letsencrypt
+
     echo "installDTR: Installing ${DTR_VERSION} Docker Trusted Registry (DTR) on ${UCP_NODE} for UCP at ${UCP_FQDN} and with a DTR Load Balancer at ${DTR_FQDN}"
 
     # Pre-Pull Images
@@ -50,11 +50,11 @@ installDTR() {
         --rm \
         docker/dtr:${DTR_VERSION} install \
         --dtr-external-url "https://${DTR_FQDN}" \
+        --ucp-insecure-tls \
         --ucp-url "https://${UCP_FQDN}" \
         --ucp-node "${UCP_NODE}" \
         --ucp-username "${UCP_USERNAME}" \
         --ucp-password "${UCP_PASSWORD}" \
-        --ucp-insecure-tls 
 
     echo "installDTR: Finished installing Docker Trusted Registry (DTR)"
 
@@ -85,7 +85,19 @@ joinDTR() {
 
 letsencrypt() {
 
-    echo "letsencrypt: beginning generation of certificates"
+    echo "letsencrypt: beginning generation of certificates ${DTR_FQDN}"
+
+    # Pre-Pull Images
+    docker pull nginx/alpine:latest
+    docker pull certbot/certbot:latest
+
+    # Certbot stands up a webserver to connect with letsencrypt
+    # However it does not stay up long enough for the Azure LB Probe to detect it and route traffic
+    # To get the LB working we'll start a webserver for a time, then exit and run the certbot
+    docker run --detach --publish 80:80 --publish 443:443 --name lb_bait nginx:alpine
+    sleep 20
+    docker rm -f lb_bait
+    docker rmi nginx/alpine:latest certbot/cerbot:latest
 
     # Generate certificate with certbot
     docker run \
@@ -98,8 +110,8 @@ letsencrypt() {
     certbot/certbot:latest \
     certonly \
     --agree-tos \
-    -d "${UCP_FQDN}" \
-    -n \
+    --domains "${DTR_FQDN}" \
+    --noninteractive \
     --register-unsafely-without-email \
     --standalone \
 
