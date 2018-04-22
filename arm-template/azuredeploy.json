@@ -21,7 +21,8 @@
       "defaultValue": {
         "installDockerEE": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-docker-ee.sh",
         "installUCP": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-ucp.sh",
-        "installDTR": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-dtr.sh"
+        "installDTR": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-dtr.sh",
+        "installUCPPowershell": "https://raw.githubusercontent.com/stevenfollis/ee-workshop/master/arm-template/install-ucp.ps1"        
       }
     },
     "credentials": {
@@ -97,6 +98,18 @@
         "version": "latest"
       }
     },
+    "workers-windows": {
+      "instances": "[parameters('instances').workers.windows]",
+      "avSet": "workers-windows",
+      "subnet": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('shared').networking.name, 'nodes')]",
+      "vmSize": "Standard_E2S_v3",
+      "imageReference": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2016-Datacenter-with-Containers",
+        "version": "latest"
+      }
+    },
     "api": {
       "availabilitySets": "2015-06-15",
       "loadBalancers": "2015-06-15",
@@ -167,6 +180,19 @@
       "location": "[resourceGroup().location]",
       "tags": {
         "displayName": "Availability Set - Workers (Linux)"
+      },
+      "properties": {
+        "platformFaultDomainCount": 2,
+        "platformUpdateDomainCount": 5
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[variables('workers-windows').avSet]",
+      "apiVersion": "[variables('api').availabilitySets]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "Availability Set - Workers (Windows)"
       },
       "properties": {
         "platformFaultDomainCount": 2,
@@ -272,6 +298,25 @@
         "publicIPAllocationMethod": "Dynamic",
         "dnsSettings": {
           "domainNameLabel": "[concat(variables('labName'), '-worker-linux-', padLeft(copyIndex(1), 2, '0'))]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('api').publicIPAddresses]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'))]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "PIP - Windows Workers"
+      },
+      "copy": {
+        "name": "PIPCopy",
+        "count": "[variables('workers-windows').instances]"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[concat(variables('labName'), '-worker-win-', padLeft(copyIndex(1), 2, '0'))]"
         }
       }
     },
@@ -666,81 +711,47 @@
       ]
     },
     {
-      "type": "Microsoft.Compute/virtualMachines",
-      "name": "manager-01",
-      "apiVersion": "[variables('api').virtualMachines]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'))]",
+      "apiVersion": "[variables('api').networkInterfaces]",
       "location": "[resourceGroup().location]",
       "tags": {
-        "displayName": "VM - Manager01"
+        "displayName": "NIC - Windows Workers"
+      },
+      "copy": {
+        "name": "NICCopy",
+        "count": "[variables('workers-windows').instances]"
       },
       "properties": {
-        "hardwareProfile": {
-          "vmSize": "[variables('managers').vmSize]"
-        },
-        "storageProfile": {
-          "imageReference": "[variables('managers').imageReference]",
-          "osDisk": {
-            "name": "osdisk",
-            "diskSizeGB": 128,
-            "vhd": {
-              "uri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('shared').storage.name), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).primaryEndpoints.blob, 'vhd', '/', 'manager-01', '-osdisk.vhd')]"
-            },
-            "caching": "ReadWrite",
-            "createOption": "FromImage"
+        "copy": [{
+          "name": "ipConfigurations",
+          "count": 128,
+          "input": {
+            "name": "[concat('ipconfig', copyIndex('ipConfigurations'))]",
+            "properties": {
+              "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
+              "publicIPAddress": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('worker-win-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
+              "subnet": {
+                "id": "[variables('workers-linux').subnet]"
+              }
+            }
           }
-        },
-        "osProfile": {
-          "computerName": "manager01",
-          "adminUsername": "[parameters('credentials').adminUsername]",
-          "adminPassword": "[parameters('credentials').adminPassword]"
-        },
-        "networkProfile": {
-          "networkInterfaces": [{
-            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'manager-01')]"
-          }]
-        },
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', 'managers')]"
-        }
+        }]
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/availabilitySets', variables('managers').avSet)]",
-        "[resourceId('Microsoft.Network/networkInterfaces', 'manager-01')]"
-      ],
-      "resources": [{
-        "name": "InstallDockerEE",
-        "type": "extensions",
-        "location": "[resourceGroup().location]",
-        "apiVersion": "[variables('api').virtualMachines]",
-        "dependsOn": [
-          "[resourceId('Microsoft.Compute/virtualMachines', 'manager-01')]",
-          "[resourceId('Microsoft.Network/publicIPAddresses', 'ucp')]"
-        ],
-        "tags": {
-          "displayName": "InstallDocker"
-        },
-        "properties": {
-          "publisher": "Microsoft.Azure.Extensions",
-          "type": "CustomScript",
-          "typeHandlerVersion": "2.0",
-          "autoUpgradeMinorVersion": true,
-          "settings": {
-            "fileUris": [
-              "[parameters('scripts').installDockerEE]",
-              "[parameters('scripts').installUCP]"
-            ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Manager ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
-          }
-        }
-      }]
+        "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]",
+        "[resourceId('Microsoft.Network/loadBalancers', 'apps')]"
+      ]
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
       "copy": {
         "name": "VMCopy",
-        "count": "[sub(variables('managers').instances, 1)]"
+        "count": "[variables('managers').instances]",
+        "mode": "Serial"
       },
-      "name": "[concat('manager-', padLeft(copyIndex(2), 2, '0'))]",
+      "name": "[concat('manager-', padLeft(copyIndex(1), 2, '0'))]",
       "apiVersion": "[variables('api').virtualMachines]",
       "location": "[resourceGroup().location]",
       "tags": {
@@ -756,20 +767,20 @@
             "name": "osdisk",
             "diskSizeGB": 128,
             "vhd": {
-              "uri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('shared').storage.name), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).primaryEndpoints.blob, 'vhd', '/', concat('manager-', padLeft(copyIndex(2), 2, '0')), '-osdisk.vhd')]"
+              "uri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('shared').storage.name), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).primaryEndpoints.blob, 'vhd', '/', concat('manager-', padLeft(copyIndex(1), 2, '0')), '-osdisk.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
           }
         },
         "osProfile": {
-          "computerName": "[concat('manager', padLeft(copyIndex(2), 2, '0'))]",
+          "computerName": "[concat('manager', padLeft(copyIndex(1), 2, '0'))]",
           "adminUsername": "[parameters('credentials').adminUsername]",
           "adminPassword": "[parameters('credentials').adminPassword]"
         },
         "networkProfile": {
           "networkInterfaces": [{
-            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('manager-', padLeft(copyIndex(2), 2, '0')))]"
+            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('manager-', padLeft(copyIndex(1), 2, '0')))]"
           }]
         },
         "availabilitySet": {
@@ -778,7 +789,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Compute/availabilitySets', variables('managers').avSet)]",
-        "[resourceId('Microsoft.Network/networkInterfaces', concat('manager-', padLeft(copyIndex(2), 2, '0')))]"
+        "[resourceId('Microsoft.Network/networkInterfaces', concat('manager-', padLeft(copyIndex(1), 2, '0')))]"
       ],
       "resources": [{
         "name": "InstallDockerEE",
@@ -786,8 +797,7 @@
         "location": "[resourceGroup().location]",
         "apiVersion": "[variables('api').virtualMachines]",
         "dependsOn": [
-          "[resourceId('Microsoft.Compute/virtualMachines/extensions', 'manager-01', 'InstallDockerEE')]",
-          "[resourceId('Microsoft.Compute/virtualMachines', concat('manager-', padLeft(copyIndex(2), 2, '0')))]",
+          "[resourceId('Microsoft.Compute/virtualMachines', concat('manager-', padLeft(copyIndex(1), 2, '0')))]",
           "[resourceId('Microsoft.Network/publicIPAddresses', 'ucp')]"
         ],
         "tags": {
@@ -953,6 +963,78 @@
               "[parameters('scripts').installUCP]"
             ],
             "commandToExecute": "[concat('sh install-docker-ee.sh', ' ', parameters('dockerEEURL'), ' ', parameters('versions').engine, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[0].properties.addressPrefix)]"
+          }
+        }
+      }]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "copy": {
+        "name": "VMCopy",
+        "count": "[variables('workers-windows').instances]"
+      },
+      "name": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'))]",
+      "apiVersion": "[variables('api').virtualMachines]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "VM - Windows Workers"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('workers-windows').vmSize]"
+        },
+        "storageProfile": {
+          "imageReference": "[variables('workers-windows').imageReference]",
+          "osDisk": {
+            "name": "osdisk",
+            "diskSizeGB": 128,
+            "vhd": {
+              "uri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('shared').storage.name), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).primaryEndpoints.blob, 'vhd', '/', concat('worker-win-', padLeft(copyIndex(1), 2, '0')), '-osdisk.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "osProfile": {
+          "computerName": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'))]",
+          "adminUsername": "[parameters('credentials').adminUsername]",
+          "adminPassword": "[parameters('credentials').adminPassword]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [{
+            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
+          }]
+        },
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', 'workers-windows')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/availabilitySets', variables('workers-windows').avSet)]",
+        "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
+      ],
+      "resources": [{
+        "name": "InstallDockerEE",
+        "type": "extensions",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "[variables('api').virtualMachines]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Compute/virtualMachines/extensions', 'manager-01', 'InstallDockerEE')]",
+          "[resourceId('Microsoft.Compute/virtualMachines', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
+        ],
+        "tags": {
+          "displayName": "InstallDocker"
+        },
+        "properties": {
+          "publisher": "Microsoft.Compute",
+          "type": "CustomScriptExtension",
+          "typeHandlerVersion": "1.9",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "fileUris": [
+              "[parameters('scripts').installUCPPowershell]"
+            ],
+            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"', parameters('credentials').adminUsername, '\" -Password \"', parameters('credentials').adminPassword, '\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\"')]"
           }
         }
       }]
