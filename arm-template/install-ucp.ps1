@@ -23,6 +23,7 @@ Else {
 
   # Allow queries against self-signed certificates in UCP
   [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
   # Get Authentication Token
   Try {
