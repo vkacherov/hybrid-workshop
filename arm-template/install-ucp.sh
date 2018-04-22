@@ -118,7 +118,7 @@ joinUCP() {
 
 letsencrypt() {
 
-    echo "letsencrypt: beginning generation of certificates"
+    echo "letsencrypt: beginning generation of certificates for ${UCP_FQDN}"
 
     # Certbot stands up a webserver to connect with letsencrypt
     # However it does not stay up long enough for the Azure LB Probe to detect it and route traffic
@@ -143,11 +143,6 @@ letsencrypt() {
     --preferred-challenges http \
     --register-unsafely-without-email \
     --standalone 
-
-    echo "boom"
-
-    # Wait for letsencrypt to finish before proceeding
-    docker wait letsencrypt
 
     # Make a volume and copy in certificates 
     docker volume create ucp-controller-server-certs
