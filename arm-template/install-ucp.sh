@@ -121,7 +121,7 @@ letsencrypt() {
     echo "letsencrypt: beginning generation of certificates for ${UCP_FQDN}"
 
     # Pre-Pull Images
-    docker pull nginx:alpine:latest
+    docker pull nginx/alpine:latest
     docker pull certbot/certbot:latest
 
     # Certbot stands up a webserver to connect with letsencrypt
@@ -130,6 +130,7 @@ letsencrypt() {
     docker run --detach --publish 80:80 --publish 443:443 --name lb_bait nginx:alpine
     sleep 20
     docker rm -f lb_bait
+    docker rmi nginx/alpine:latest certbot/cerbot:latest
 
     # Generate certificate with certbot
     docker run \
