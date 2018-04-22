@@ -11,7 +11,7 @@
         "managers": 3,
         "dtr": 3,
         "workers": {
-          "linux": 3,
+          "linux": 2,
           "windows": 0
         }
       }
@@ -65,7 +65,7 @@
       "instances": "[parameters('instances').managers]",
       "avSet": "managers",
       "subnet": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('shared').networking.name, 'nodes')]",
-      "vmSize": "Standard_DS2_v2",
+      "vmSize": "Standard_DS3_v2",
       "imageReference": {
         "publisher": "Canonical",
         "offer": "UbuntuServer",
@@ -297,6 +297,26 @@
           "name": "LoadBalancerBackEnd"
         }],
         "loadBalancingRules": [{
+            "name": "tcp80",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIpConfigurations', 'ucp', 'LoadBalancerFrontEnd')]"
+              },
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "loadDistribution": "Default",
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'ucp', 'LoadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', 'ucp', 'tcp80')]"
+              }
+            }
+          },
+          {
             "name": "tcp443",
             "properties": {
               "frontendIPConfiguration": {
@@ -338,6 +358,15 @@
           }
         ],
         "probes": [{
+            "name": "tcp80",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 80,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            }
+          },
+          {
             "name": "tcp443",
             "properties": {
               "protocol": "Tcp",
@@ -621,7 +650,7 @@
             "name": "[concat('ipconfig', copyIndex('ipConfigurations'))]",
             "properties": {
               "primary": "[equals(copyIndex('ipConfigurations'), 0)]",
-              "publicIPAddress":                 "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('worker-linux-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
+              "publicIPAddress": "[if(equals(copyIndex('ipConfigurations'), 0), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIPAddresses', concat('worker-linux-', padLeft(copyIndex('NICCopy', 1), 2, '0'))), '\"}')), json('null'))]",
               "subnet": {
                 "id": "[variables('workers-linux').subnet]"
               },
