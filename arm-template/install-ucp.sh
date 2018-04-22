@@ -120,6 +120,10 @@ letsencrypt() {
 
     echo "letsencrypt: beginning generation of certificates for ${UCP_FQDN}"
 
+    # Pre-Pull Images
+    docker pull nginx:alpine:latest
+    docker pull certbot/certbot:latest
+
     # Certbot stands up a webserver to connect with letsencrypt
     # However it does not stay up long enough for the Azure LB Probe to detect it and route traffic
     # To get the LB working we'll start a webserver for a time, then exit and run the certbot
