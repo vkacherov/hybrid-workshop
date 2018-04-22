@@ -12,6 +12,7 @@ installEngine() {
 
   # Update the apt package index
   sudo apt-get -qq update
+  sudo apt-get -qq -y upgrade
 
   # Install packages to allow apt to use a repository over HTTPS
   sudo apt-get -qq install \
