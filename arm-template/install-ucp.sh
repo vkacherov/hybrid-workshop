@@ -120,6 +120,13 @@ letsencrypt() {
 
     echo "letsencrypt: beginning generation of certificates"
 
+    # Certbot stands up a webserver to connect with letsencrypt
+    # However it does not stay up long enough for the Azure LB Probe to detect it and route traffic
+    # To get the LB working we'll start a webserver for a time, then exit and run the certbot
+    docker run --detach --publish 80:80 --publish 443:443 --name lb_bait nginx:alpine
+    sleep 20
+    docker rm -f lb_bait
+
     # Generate certificate with certbot
     docker run \
     --rm \
@@ -133,8 +140,11 @@ letsencrypt() {
     --agree-tos \
     --domains "${UCP_FQDN}" \
     --noninteractive \
+    --preferred-challenges http \
     --register-unsafely-without-email \
     --standalone 
+
+    echo "boom"
 
     # Wait for letsencrypt to finish before proceeding
     docker wait letsencrypt
