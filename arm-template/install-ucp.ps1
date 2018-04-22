@@ -5,12 +5,26 @@ param (
   [Parameter(Mandatory = $True)][String]$Username,
   [Parameter(Mandatory = $True)][String]$Password,
   [Parameter(Mandatory = $True)][String]$UCP_FQDN,
+  [string]$Engine_Version = "latest",
   [string]$UCP_Version = "latest"
 )
 
 # Join node if not in a Swarm
 If ((docker info -f '{{.Swarm.LocalNodeState}}') -eq 'active') {
   Write-Output "Node is currently in a Swarm. Skipping join process"
+
+  # Ensure installed engine is desired engine
+  $Installed_Engine_Version=(docker version -f '{{.Server.Version}}')
+
+  if($Engine_Version -eq $Installed_Engine_Version) {
+      Write-Output "Installed engine version matches specified engine version"
+  }
+  else {
+      Write-Output "Installed engine does not match specified engien version"
+      Write-Output "Updating engine version"
+      Install-Package -Name docker -ProviderName DockerMsftProvider -Update -Force -RequiredVersion $Engine_Version
+  }
+
 }
 Else {
   Write-Output "Node is not currently in a Swarm. Joining to Swarm at $UCP_FQDN"
