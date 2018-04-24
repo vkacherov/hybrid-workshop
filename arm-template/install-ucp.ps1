@@ -17,20 +17,24 @@ function Check-Engine {
   $Installed_Engine_Version=(docker version -f '{{.Server.Version}}')
 
   if($Engine_Version -eq $Installed_Engine_Version) {
-      Write-Output "Installed engine version matches specified engine version"
+    Write-Output "Installed engine version matches specified engine version"
   }
   else {
 
     Write-Output "Installed engine does not match specified engine version"
     Write-Output "Updating engine version"
 
+    # Update PowerShell provider
     Stop-Service docker
     Install-Package -Name docker -ProviderName DockerMsftProvider -Update -Force -RequiredVersion $Engine_Version
     Restart-Service docker
-    Prepare-Node
-    Pre-Pull-Images
+
+    Write-Output "Updated engine version to $Engine_version"
 
   }
+
+  # Check Swarm status
+  Check-Swarm
 
 }
 
@@ -39,7 +43,7 @@ function Check-Swarm {
   # Join node if not in a Swarm
   If ((docker info -f '{{.Swarm.LocalNodeState}}') -eq 'active') {
     Write-Output "Node is currently in a Swarm. Skipping join process"
-    Check-Engine
+    # Pre-Pull-Images
   }
   Else {
     Write-Output "Node is not currently in a Swarm. Joining to Swarm at $UCP_FQDN"
@@ -50,9 +54,11 @@ function Check-Swarm {
 
 function Prepare-Node {
 
-  # Setup node to work with UCP
+  # Pre-Pull necessary UCP images
   docker image pull docker/ucp-agent-win:$UCP_Version
   docker image pull docker/ucp-dsinfo-win:$UCP_Version
+
+  # Run Windows node setup script to open firewall and securely connect to Docker engine
   $script = [ScriptBlock]::Create((docker run --rm docker/ucp-agent-win:$UCP_Version windows-script | Out-String))
   Invoke-Command $script
 
@@ -111,7 +117,7 @@ function Join-Swarm {
   # Join Swarm
   Try {
     docker swarm join --token $UCP_JOIN_TOKEN_WORKER $UCP_MANAGER_ADDRESS
-    Pre-Pull-Images
+    # Pre-Pull-Images
   }
   Catch {
     Write-Error "Unable to join node to Swarm"
@@ -130,8 +136,8 @@ function Pre-Pull-Images {
 }
 
 function Main {
-  Start-Service docker
-  Check-Swarm
+  Restart-Service docker
+  Check-Engine
 }
 
 Main
