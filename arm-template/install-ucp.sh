@@ -65,6 +65,7 @@ installUCP() {
         --admin-username "${UCP_ADMIN}" \
         --admin-password "${UCP_PASSWORD}" \
         --cloud-provider Azure \
+        --host-address eth0 \
         --san "${UCP_FQDN}" \
         --pod-cidr "${SUBNET_IP_RANGE}" \
         --external-server-cert \

@@ -101,22 +101,29 @@ letsencrypt() {
     docker rm -f lb_bait
     docker rmi nginx/alpine:latest certbot/cerbot:latest
 
-    # Generate certificate with certbot
-    docker run \
-    --rm \
-    --publish 443:443 \
-    --publish 80:80 \
-    --name letsencrypt \
-    --volume "/etc/letsencrypt:/etc/letsencrypt" \
-    --volume "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-    certbot/certbot:latest \
-    certonly \
-    --agree-tos \
-    --domains "${DTR_FQDN}" \
-    --noninteractive \
-    --preferred-challenges http \
-    --register-unsafely-without-email \
-    --standalone
+    while [ ! -f /etc/letsencrypt/live/"${DTR_FQDN}"/fullchain.pem ]
+    do
+        # Generate certificate with certbot
+        docker run \
+        --rm \
+        --publish 443:443 \
+        --publish 80:80 \
+        --name letsencrypt \
+        --volume "/etc/letsencrypt:/etc/letsencrypt" \
+        --volume "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+        certbot/certbot:latest \
+        certonly \
+        --agree-tos \
+        --domains "${DTR_FQDN}" \
+        --noninteractive \
+        --preferred-challenges http \
+        --register-unsafely-without-email \
+        --standalone
+        
+        sleep 3
+    done
+
+    
 
     # Store letsencrypt CA 
     curl -o /etc/letsencrypt/live/"${DTR_FQDN}"/ca.pem https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
