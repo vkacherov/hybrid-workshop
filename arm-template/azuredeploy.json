@@ -1072,7 +1072,7 @@
         "location": "[resourceGroup().location]",
         "apiVersion": "[variables('api').virtualMachines]",
         "dependsOn": [
-          "[resourceId('Microsoft.Compute/virtualMachines/extensions', if(greater(copyIndex(), 1), concat('manager-', padLeft(copyIndex(), 2, '0')), 'manager-01'), 'InstallDockerEE')]",
+          "[resourceId('Microsoft.Compute/virtualMachines/extensions', if(greaterOrEquals(copyIndex(), 1), concat('dtr-', padLeft(copyIndex(), 2, '0')), 'manager-01'), 'InstallDockerEE')]",
           "[resourceId('Microsoft.Compute/virtualMachines', concat('dtr-', padLeft(copyIndex(1), 2, '0')))]",
           "[resourceId('Microsoft.Network/publicIPAddresses', 'dtr')]"
         ],
