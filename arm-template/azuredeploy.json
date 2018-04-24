@@ -1013,7 +1013,8 @@
       "type": "Microsoft.Compute/virtualMachines",
       "copy": {
         "name": "VMCopy",
-        "count": "[variables('dtr').instances]"
+        "count": "[variables('dtr').instances]",
+        "mode": "Serial"
       },
       "name": "[concat('dtr-', padLeft(copyIndex(1), 2, '0'))]",
       "apiVersion": "[variables('api').virtualMachines]",
