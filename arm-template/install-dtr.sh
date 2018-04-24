@@ -11,6 +11,10 @@ readonly DTR_FQDN=$2
 # Version of DTR to be installed
 readonly DTR_VERSION=$3
 
+# Azure Storage Account Credentials
+readonly AZURE_STORAGE_ACCOUNT=$4
+readonly AZURE_STORAGE_KEY=$5
+
 # Node to configure DTR (current)
 readonly UCP_NODE=$(cat /etc/hostname)
 
@@ -58,6 +62,9 @@ installDTR() {
         --ucp-node "${UCP_NODE}" \
         --ucp-username "${UCP_USERNAME}" \
         --ucp-password "${UCP_PASSWORD}"
+
+    # Configure Azure Storage
+    configureStorage
 
     echo "installDTR: Finished installing Docker Trusted Registry (DTR)"
 
@@ -122,6 +129,37 @@ letsencrypt() {
     curl -o /etc/letsencrypt/live/"${DTR_FQDN}"/ca.pem https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
 
     echo "letsencrypt: finished generating certificates"
+
+}
+
+configureStorage() {
+
+    echo "Configuring DTR Storage with Azure"
+
+    # Configure DTR to use Azure Storage for its backend
+    curl --request PUT \
+    --url "https://${DTR_FQDN}/api/v0/admin/settings/registry/simple" \
+    -u "${UCP_USERNAME}:${UCP_PASSWORD}" \
+    --header 'accept: application/json' \
+    --header 'content-type: application/json' \
+    --data "{
+        \"storage\": {
+            \"azure\": {
+                \"accountkey\": \"${AZURE_STORAGE_KEY}\",
+                \"accountname\": \"${AZURE_STORAGE_ACCOUNT}\",
+                \"container\": \"dtrstorage\",
+                \"realm\": \"core.windows.net\"
+            },
+            \"delete\": {
+                \"enabled\": true
+            },
+            \"maintenance\": {
+                \"readonly\": {
+                    \"enabled\": false
+                }
+            }
+        }
+    }"
 
 }
 
