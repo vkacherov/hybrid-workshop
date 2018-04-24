@@ -862,7 +862,7 @@
     },
     {
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'), '-pods')]",
+      "name": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'))]",
       "apiVersion": "[variables('api').networkInterfaces]",
       "location": "[resourceGroup().location]",
       "tags": {
@@ -888,13 +888,12 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]",
-        "[resourceId('Microsoft.Network/publicIPAddresses', concat('worker-linux-', padLeft(copyIndex(1), 2, '0')))]",
-        "[resourceId('Microsoft.Network/loadBalancers', 'apps')]"
+        "[resourceId('Microsoft.Network/publicIPAddresses', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
       ]
     },
     {
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'))]",
+      "name": "[concat('worker-win-', padLeft(copyIndex(1), 2, '0'), '-pods')]",
       "apiVersion": "[variables('api').networkInterfaces]",
       "location": "[resourceGroup().location]",
       "tags": {
@@ -921,8 +920,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]",
-        "[resourceId('Microsoft.Network/publicIPAddresses', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]",
-        "[resourceId('Microsoft.Network/loadBalancers', 'apps')]"
+        "[resourceId('Microsoft.Network/publicIPAddresses', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
       ]
     },
     {
@@ -1215,6 +1213,8 @@
         "networkProfile": {
           "networkInterfaces": [{
             "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
+          }, {
+            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0'), '-pods'))]"
           }]
         },
         "availabilitySet": {
