@@ -26,7 +26,7 @@ checkDTR() {
     # Check if DTR exists by attempting to hit its load balancer
     STATUS=$(curl --request GET --url "https://${DTR_FQDN}/_ping" --insecure --silent --output /dev/null -w '%{http_code}' --max-time 5)
     
-    echo "checkDTR: API status for ${DTR_FQDN} returned as: ${STATUS}"
+    echo "checkDTR: API status for ${DTR_FQDN} returned as ${STATUS}"
     
     if [ "$STATUS" -eq 200 ]; then
         echo "checkDTR: Successfully queried the DTR API. DTR is installed. Joining node to existing cluster."
@@ -44,9 +44,6 @@ installDTR() {
     letsencrypt
 
     echo "installDTR: Installing ${DTR_VERSION} Docker Trusted Registry (DTR) on ${UCP_NODE} for UCP at ${UCP_FQDN} and with a DTR Load Balancer at ${DTR_FQDN}"
-
-    # Pre-Pull Images
-    docker run --rm docker/dtr:"${DTR_VERSION}" images | xargs -L 1 docker pull
 
     # Install Docker Trusted Registry
     docker run \
@@ -69,9 +66,6 @@ installDTR() {
 joinDTR() {
     
     echo "joinDTR: Joining DTR with Replica ID ${REPLICA_ID}"
-
-    # Pre-Pull Images
-    docker run --rm docker/dtr:"${DTR_VERSION}" images | xargs -L 1 docker pull
 
     # Join an existing Docker Trusted Registry
     docker run \
