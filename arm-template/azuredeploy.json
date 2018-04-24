@@ -1212,9 +1212,15 @@
         },
         "networkProfile": {
           "networkInterfaces": [{
-            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]"
+            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0')))]",
+            "properties": {
+              "primary": true
+            }
           }, {
-            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0'), '-pods'))]"
+            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('worker-win-', padLeft(copyIndex(1), 2, '0'), '-pods'))]",
+            "properties": {
+              "primary": false
+            }
           }]
         },
         "availabilitySet": {
