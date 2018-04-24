@@ -6,7 +6,8 @@ param (
   [Parameter(Mandatory = $True)][String]$Password,
   [Parameter(Mandatory = $True)][String]$UCP_FQDN,
   [string]$Engine_Version = "latest",
-  [string]$UCP_Version = "latest"
+  [string]$UCP_Version = "latest",
+  [string]$Mode = "Full"
 )
 
 function Check-Engine {
@@ -68,60 +69,73 @@ function Join-Swarm {
 
   Prepare-Node
 
-  # Allow queries against self-signed certificates in UCP
-  [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  If ($Mode -eq 'Partial') {
 
-  # Get Authentication Token
-  Try {
-    $AUTH_TOKEN = (Invoke-RestMethod `
-        -Uri "https://$UCP_FQDN/auth/login" `
-        -Body "{`"username`":`"$Username`",`"password`":`"$Password`"}" `
-        -Method POST).auth_token
+    # For Partial mode we setup the node but stop short of joining to Swarm
+    # Node will be joined to Swarm during the lab
+    Write-Output "Partially setup node and stopping short of joining cluster"
+
+  }
+  Else {
     
-    Write-Output "Successfully retrieved Authentication Token"
-  }
-  Catch {
-    Write-Error "Failed to get Authentication Token"
-    Exit 1
-  }
+    # If a Full installation proceed with joining cluster
+    
+    # Allow queries against self-signed certificates in UCP
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-  # Get Swarm Manager IP Address + Port
-  Try {
-    $UCP_MANAGER_ADDRESS = (Invoke-RestMethod `
-        -Method GET `
-        -Uri "https://$UCP_FQDN/info" `
-        -Headers @{"Accept" = "application/json"; "Authorization" = "Bearer $AUTH_TOKEN"}).Swarm.RemoteManagers[0].Addr
+    # Get Authentication Token
+    Try {
+      $AUTH_TOKEN = (Invoke-RestMethod `
+          -Uri "https://$UCP_FQDN/auth/login" `
+          -Body "{`"username`":`"$Username`",`"password`":`"$Password`"}" `
+          -Method POST).auth_token
+      
+      Write-Output "Successfully retrieved Authentication Token"
+    }
+    Catch {
+      Write-Error "Failed to get Authentication Token"
+      Exit 1
+    }
 
-    Write-Output "Successfully retrieved Swarm Manager IP and Port"
-  }
-  Catch {
-    Write-Error "Failed to get Swarm Manager IP and Port"
-    Exit 1
-  }
+    # Get Swarm Manager IP Address + Port
+    Try {
+      $UCP_MANAGER_ADDRESS = (Invoke-RestMethod `
+          -Method GET `
+          -Uri "https://$UCP_FQDN/info" `
+          -Headers @{"Accept" = "application/json"; "Authorization" = "Bearer $AUTH_TOKEN"}).Swarm.RemoteManagers[0].Addr
 
-  # Get Swarm Join Tokens
-  Try {
-    $UCP_JOIN_TOKEN_WORKER = (Invoke-RestMethod `
-        -Method GET `
-        -Uri "https://$UCP_FQDN/swarm" `
-        -Headers @{"Accept" = "application/json"; "Authorization" = "Bearer $AUTH_TOKEN"}).JoinTokens.Worker
+      Write-Output "Successfully retrieved Swarm Manager IP and Port"
+    }
+    Catch {
+      Write-Error "Failed to get Swarm Manager IP and Port"
+      Exit 1
+    }
 
-    Write-Output "Successfully retrieved Swarm Worker Join Token"
-  }
-  Catch {
-    Write-Error "Failed to get Swarm Worker Join Token"
-    Exit 1
-  }
+    # Get Swarm Join Tokens
+    Try {
+      $UCP_JOIN_TOKEN_WORKER = (Invoke-RestMethod `
+          -Method GET `
+          -Uri "https://$UCP_FQDN/swarm" `
+          -Headers @{"Accept" = "application/json"; "Authorization" = "Bearer $AUTH_TOKEN"}).JoinTokens.Worker
 
-  # Join Swarm
-  Try {
-    docker swarm join --token $UCP_JOIN_TOKEN_WORKER $UCP_MANAGER_ADDRESS
-    # Pre-Pull-Images
-  }
-  Catch {
-    Write-Error "Unable to join node to Swarm"
-    Exit 1
+      Write-Output "Successfully retrieved Swarm Worker Join Token"
+    }
+    Catch {
+      Write-Error "Failed to get Swarm Worker Join Token"
+      Exit 1
+    }
+
+    # Join Swarm
+    Try {
+      docker swarm join --token $UCP_JOIN_TOKEN_WORKER $UCP_MANAGER_ADDRESS
+      # Pre-Pull-Images
+    }
+    Catch {
+      Write-Error "Unable to join node to Swarm"
+      Exit 1
+    }
+
   }
 
 }
