@@ -18,6 +18,9 @@ readonly UCP_NODE=$(cat /etc/hostname)
 readonly UCP_USERNAME='eeadmin'
 readonly UCP_PASSWORD='DockerEE123!'
 
+# Set a Replica ID 
+readonly REPLICA_ID='012345678910'
+
 checkDTR() {
 
     # Check if DTR exists by attempting to hit its load balancer
@@ -53,6 +56,7 @@ installDTR() {
         --dtr-cert "$(cat /etc/letsencrypt/live/"${DTR_FQDN}"/fullchain.pem)" \
         --dtr-key "$(cat /etc/letsencrypt/live/"${DTR_FQDN}"/privkey.pem)" \
         --dtr-external-url "https://${DTR_FQDN}" \
+        --replica-id "${REPLICA_ID}" \
         --ucp-url "https://${UCP_FQDN}" \
         --ucp-node "${UCP_NODE}" \
         --ucp-username "${UCP_USERNAME}" \
@@ -63,9 +67,6 @@ installDTR() {
 }
 
 joinDTR() {
-
-    # Get DTR Replica ID
-    REPLICA_ID=$(curl --request GET --insecure --silent --url "https://${DTR_FQDN}/api/v0/meta/settings" -u "${UCP_USERNAME}":"${UCP_PASSWORD}" --header 'Accept: application/json' | jq --raw-output .replicaID)
     
     echo "joinDTR: Joining DTR with Replica ID ${REPLICA_ID}"
 
@@ -122,8 +123,6 @@ letsencrypt() {
         
         sleep 3
     done
-
-    
 
     # Store letsencrypt CA 
     curl -o /etc/letsencrypt/live/"${DTR_FQDN}"/ca.pem https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt
