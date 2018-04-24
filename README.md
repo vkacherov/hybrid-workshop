@@ -126,7 +126,7 @@ An Azure Resource Manager (ARM) Template is provided for this lab. The template 
 
 1. With the form completed, check the box for `I agree to the terms and conditions stated above` and click the `Purchase` button to begin the provisioning process.
 
-The provisioning process often takes 15-20 minutes to fully create and setup the entire Docker EE Cluster. In the interim, please feel free to take a short break, or begin watching the YouTube Video entitled [Getting Started with Docker for Windows and .NET Apps](https://www.youtube.com/watch?v=Pitm1x7pTfI).
+The provisioning process often takes 20+ minutes to fully create and setup the entire Docker EE Cluster. In the interim, please feel free to take a short break, or begin watching the YouTube Video entitled [Getting Started with Docker for Windows and .NET Apps](https://www.youtube.com/watch?v=Pitm1x7pTfI).
 
 1. When the template deployment is completed, navigate to your Azure Resource Group and on the left-hand side select `Deployments`. 
 	
