@@ -47,7 +47,7 @@ checkUCP() {
 installUCP() {
     
     # Initialize a Swarm
-    docker swarm init
+    docker swarm init --advertise-addr eth0
 
     # Generate certificates for use with UCP
     letsencrypt
