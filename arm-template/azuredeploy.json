@@ -1233,7 +1233,6 @@
       ],
       "resources": [{
         "name": "InstallDockerEE",
-        "condition": false,
         "type": "extensions",
         "location": "[resourceGroup().location]",
         "apiVersion": "[variables('api').virtualMachines]",
