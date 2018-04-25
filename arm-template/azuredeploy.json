@@ -1088,7 +1088,7 @@
               "[parameters('scripts').installUCP]",
               "[parameters('scripts').installDTR]"
             ],
-            "commandToExecute": "[concat('sh install-docker-ee.sh ', parameters('dockerEEURL'), ' ', parameters('versions').engine.linux, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[1].properties.addressPrefix, ' && sh install-dtr.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn, ' ', parameters('versions').dtr)]"
+            "commandToExecute": "[concat('sh install-docker-ee.sh ', parameters('dockerEEURL'), ' ', parameters('versions').engine.linux, ' && sh install-ucp.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'apps')).dnsSettings.fqdn, ' Worker ', parameters('versions').ucp, ' ', variables('shared').networking.subnets[1].properties.addressPrefix, ' && sh install-dtr.sh ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, ' ', reference(resourceId('Microsoft.Network/publicIPAddresses', 'dtr')).dnsSettings.fqdn, ' ', parameters('versions').dtr, ' ', variables('shared').storage.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('shared').storage.name), '2016-12-01').keys[0].value)]"
           }
         }
       }]
@@ -1252,7 +1252,7 @@
             "fileUris": [
               "[parameters('scripts').installUCPPowershell]"
             ],
-            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"', parameters('credentials').adminUsername, '\" -Password \"', parameters('credentials').adminPassword, '\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\" -Engine_Version \"', parameters('versions').engine.windows, '\"')]"
+            "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File install-ucp.ps1 -Username \"', parameters('credentials').adminUsername, '\" -Password \"', parameters('credentials').adminPassword, '\" -UCP_FQDN \"', reference(resourceId('Microsoft.Network/publicIPAddresses', 'ucp')).dnsSettings.fqdn, '\" -Engine_Version \"', parameters('versions').engine.windows, '\" -Mode \"', if(equals(copyIndex(1), variables('workers-windows').instances), 'Partial', 'Full'), '\"')]"
           }
         }
       }]
