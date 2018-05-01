@@ -74,6 +74,7 @@ function Join-Swarm {
     # For Partial mode we setup the node but stop short of joining to Swarm
     # Node will be joined to Swarm during the lab
     Write-Output "Partially setup node and stopping short of joining cluster"
+    Setup-Chocolatey
 
   }
   Else {
@@ -129,7 +130,9 @@ function Join-Swarm {
     # Join Swarm
     Try {
       docker swarm join --token $UCP_JOIN_TOKEN_WORKER $UCP_MANAGER_ADDRESS
-      # Pre-Pull-Images
+      
+      # Additional Setup
+      Setup-Chocolatey
     }
     Catch {
       Write-Error "Unable to join node to Swarm"
@@ -146,6 +149,18 @@ function Pre-Pull-Images {
   docker pull microsoft/iis:latest
   docker pull microsoft/aspnetcore-build:latest
   docker pull microsoft/aspnetcore:latest
+
+}
+
+function Setup-Chocolatey {
+
+  # Setup Chocolatey itself
+  # https://chocolatey.org/install#install-with-powershellexe
+  Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+  # Install git
+  # https://chocolatey.org/packages/git.install
+  choco install git.install -y
 
 }
 

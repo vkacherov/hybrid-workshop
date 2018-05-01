@@ -26,7 +26,7 @@ This lab is built entirely on the capabilities and features of Microsoft Azure. 
 >   * [Task 0.2: Deploy Docker EE cluster to Azure](#task0.2)
 >   * [Task 0.3: Connect to Azure Virtual Machines](#task0.3)
 > * [Task 1: Configure the Docker EE Cluster](#task1)
->   * [Task 1.1: Accessing PWD](#task1.1)
+>   * [Task 1.1: Accessing UCP](#task1.1)
 >   * [Task 1.2: Install a Windows worker node](#task1.2)
 >   * [Task 1.3: Create Three Repositories](#task1.3)
 > * [Task 2: Deploy a Java Web App](#task2)
@@ -202,9 +202,10 @@ The "Universal Control Plane" is a web-based interface for administering our con
 	> **Note**: Because this is a lab-based install of Docker EE we are using the default self-signed certificates. Because of this your browser may display a security warning. It is safe to click through this warning.
 	>
 	> In a production environment you would use certificates from a trusted certificate authority and would not see this screen.
+	>
 	> ![](./images/ssl_error.png)
 
-1. When prompted enter the username `admin` and password `DockerEE123!`. The UCP web interface should load up in your web browser.
+1. When prompted enter the username `eeadmin` and password `DockerEE123!`. The UCP web interface should load up in your web browser.
 
 ### <a name="task1.2"></a>Task 1.2: Join a Windows worker node
 
@@ -216,12 +217,14 @@ Let's start by adding our 2nd Windows Server 2016 worker node to the cluster.
 
 	![](./images/add_a_node.png)
 
-1. Select node type "Windows", check the box, that you followed the instructions and copy the text from the dark box shown on the `Add Node` screen.
+1. Select node type "`Windows`" and check the box labeled `I have followed the instructions and I'm ready to join my windows node`.
 
-	> **Note** There is an icon in the upper right corner of the box that you can click to copy the text to your clipboard
+	Copy the `docker swarm join...` text from the dark box shown on the `Add Node` screen. This command is used to join a node to a Docker EE cluster, and contains a secure token that is regularly rotated.
+
+	> **Note**: There is an icon in the upper right corner of the box that you can click to copy the text to your clipboard
 	![](./images/join_text.png)
 
-	> **Note**: You may notice that there is a UI component to select `Linux` or `Windows`on the `Add Node` screen. In a production environment where you are starting from scratch there are [a few prerequisite steps] to adding a Windows node. However, we've already done these steps in the PWD environment. So for this lab, just leave the selection on `Linux` and move on to step 2
+	> **Note**: You may notice that there is a UI component to select `Linux` or `Windows`on the `Add Node` screen. In a production environment where you are starting from scratch there are [a few prerequisite steps](https://docker.com/ddc-34) to adding a Windows node. However, we've already done these steps in the ARM Template setup script.
 
 ![](./images/windows75.png)
 
@@ -251,7 +254,7 @@ However, before we create the repositories, we do want to restrict access to the
 
 	> **Note**: As with UCP before, DTR is also using self-signed certs. It's safe to click through any browser warning you might encounter.
 
-2. From the main DTR page, click users and then the New User button.
+2. From the main DTR page, click **Users** on the left-hand nav, and then the click the green **New user** button in the top-right corner of the screen.
 
 	![](./images/user_screen.png)
 
@@ -261,19 +264,19 @@ However, before we create the repositories, we do want to restrict access to the
 
 	Then do the same for a `dotnet_user`.
 
-4. Select the Organization button.
+4. Select **Organizations** from the left-hand navigation menu
 
 	![](./images/organization_screen.png)
 
-5. Press New organization button, name it java, and click save.
+5. Create a new organization by clicking the  `New organization` button. Name it `java`, and click **Save***.
 
 	![](./images/java_organization_new.png)
 
-	Then do the same with dotnet and you'll have two organizations.
+	Then do the same with `dotnet` and you will have two organizations.
 
 	![](./images/two_organizations.png)
 
-6. Now you get to add a repository! Click on the java organization, select repositories and then Add repository
+6. Now you get to add a repository! Click on the **java** organization, select **Repositories** and then **New repository**
 
 	![](./images/add_repository_java.png)
 
@@ -283,7 +286,7 @@ However, before we create the repositories, we do want to restrict access to the
 
 	> Note the repository is listed as "Public" but that means it is publicly viewable by users of DTR. It is not available to the general public.
 
-8. Now it's time to create a team so you can restrict access to who administers the images. Select the `java` organization and the members will show up. Press Add user and start typing in java. Select the `java_user` when it comes up.
+8. Now it's time to create a team so you can restrict access to who administers the images. Select the **Members** tab of the **java** organization and the members will show up. Press Add user and start typing in java. Select the `java_user` when it comes up.
 
 	![](./images/add_java_user_to_organization.png)
 
@@ -330,7 +333,9 @@ Let's start with the Linux version.
 
 1. Before continuing, let us configure an environment variable for the DTR URL/DTR hostname. Navigate to the Azure Portal's template deployment output blade. Select and copy the the URL for the DTR hostname.
 
-1. Set an environment variable `DTR_HOST` using the DTR host name defined on your Play with Docker landing page:
+1. Set an environment variable `DTR_HOST` using the DTR host name defined on your ARM Template outputs page:
+
+	> **Note**: use a FQDN without a `http` prefix, ex. `dtr-sf-lab8.eastus.cloudapp.azure.com` 
 
 	```bash
 	$ export DTR_HOST=<dtr hostname>
@@ -373,6 +378,8 @@ Let's start with the Linux version.
 	$ docker build -t $DTR_HOST/java/java_web .
 	```
 
+	> **Note**: if you see a permissions error, run `sudo su` to elevate your terminal account before running commands
+
 	The `-t` tags the image with a name. In our case, the name indicates which DTR server and under which organization's respository the image will live.
 
 	> **Note**: Feel free to examine the Dockerfile in this directory if you'd like to see how the image is being built. Run `cat Dockerfile` or open the file in GitHub via a web browser.
@@ -396,23 +403,16 @@ Let's start with the Linux version.
 	$ docker push $DTR_HOST/java/java_web
 	```
 	
-	> TODO: add output of failure to push
+	![](./images/failed-push.png)
 
-	```bash
-	$ docker push $DTR_HOST/java/java_web
-	The push refers to a repository [.<dtr hostname>/java/java_web]
-	8cb6044fd4d7: Preparing
-	07344436fe27: Preparing
-	...
-	e1df5dc88d2c: Waiting
-	denied: requested access to the resource is denied
-	```
-
-	As you can see, the access control that you established in the [Task 1.3](#task1.3) prevented you from pushing to this repository.	
+	As you can see, the access control that you established in the [Task 1.3](#task1.3) prevented you from pushing to this repository. The user `dotnet_user` does not have permissions to use the `<your DTR>/java/java_web` repository.	
 
 1. Now try logging in using `java_user`, and then use `docker push` to upload your image up to Docker Trusted Registry.
 
 	```bash
+	$ docker login $DTR_HOST
+	Username: <your java_user username>
+	Password: <your java_user password>
 	$ docker push $DTR_HOST/java/java_web
 	```
 
@@ -441,7 +441,7 @@ Let's start with the Linux version.
 1. Next, build the MySQL database image. In the SSH session, change into the database directory.
 
 	```bash
-		$ cd ../database
+	$ cd ../database
 	```
 
 1. Use `docker build` to build your Docker image.
@@ -451,6 +451,7 @@ Let's start with the Linux version.
 	```
 
 1. Use `docker push` to upload your image up to Docker Trusted Registry.
+
 	```bash
 	$ docker push $DTR_HOST/java/database
 	```
@@ -525,7 +526,7 @@ You can do that right in the edit box in `UCP` but wanted to make sure you saw t
         external: true
     ```
 
-	Then click `Done` in the lower right.
+	After the Stack finishes creating, click the **Done** button in the lower right.
 
 8. Click on `Stacks` again, and select the `java_web` stack. Click on `Inspect Resources` and then select `Services`. Select `java_web_webserver`. In the right panel, you'll see `Published Endpoints`. Select the one with `:8080` at the end. You'll see a `Apache Tomcat/7.0.84` landing page. Add `/java-web` to the end of the URL and you'll see the app.
 
@@ -632,6 +633,7 @@ Now that we've moved the app and updated it, we're going to add in a user sign-i
 1. First we need to update the Java web app so it'll take advantage of the .NET API. Switch back to `worker-linux-02` and change directories to the `java-app-v2` directory. Repeat steps 1,2, and 4 from Task 2.2 but add a tag `:2` to your build and pushes:
 
 	```bash
+	$ cd ../java-app-v2
 	$ docker build -t $DTR_HOST/java/java_web:2 .
 	$ docker push $DTR_HOST/java/java_web:2
 	```
