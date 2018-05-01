@@ -152,13 +152,39 @@ One of the key benefits of Docker EE is the ability to manage both Linux-based a
 
 	On your local machine, open the .rdp file and login using username `\eeadmin` and password `DockerEE123!`. Open a PowerShell window inside of the RDP connection and run `docker version` to ensure that the Docker Engine was properly installed.
 
+	PowerShell should return the installed versions of the Docker Client and local Docker Engine and look similar to:
+
+	```PowerShell
+	PS C:\Users\eeadmin> docker version
+	Client:
+	  Version:       17.06.2-ee-8
+	  API version:   1.30
+	  Go version:    go1.8.7
+	  Git commit:    4e8ed51
+	  Built: Fri Mar 30 01:37:46 2018
+	  OS/Arch:       windows/amd64
+
+	Server:
+	  Engine:
+	    Version:      17.06.2-ee-8
+	    API version:  1.30 (minimum version 1.24)
+	    Go version:   go1.8.7
+	    Git commit:   4e8ed51
+	    Built:        Fri Mar 30 01:47:12 2018
+	    OS/Arch:      windows/amd64
+	    Experimental: false
+	PS C:\Users\eeadmin>
+	```
+
 	> **Note** Remote Desktop is also available for Mac Users via the [Apple Store](https://itunes.apple.com/us/app/microsoft-remote-desktop-8-0/id715768417?mt=12)
 
 1. Back in the Azure Resource Group blade, select the virtual machine named `worker-linux-02`. From the VM's blade, click `Connect` to see the command for starting an SSH connection to the node. Example `ssh eeadmin@13.92.152.49`
 
 	On your local machine, SSH into the VM. If you are running Windows 10 Fall Creator's Update or later you have SSH built into PowerShell and can run the `ssh` command directly in PowerShell. Otherwise, [putty](https://www.howtogeek.com/311287/how-to-connect-to-an-ssh-server-from-windows-macos-or-linux/) or the Windows Subsystem for Linux (WSL) can be used. 
 
-	Once you establish an SSH connection to the remote VM, run `docker version` to ensure that the DOcker Engine was properly installed.
+	Once you establish an SSH connection to the remote VM, run `sudo docker version` to ensure that the Docker Engine was properly installed. The terminal output should look nearly identical to the PowerShell in the previous step.
+
+	> **Note** if you get an error `Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get http://%2Fvar%2Frun%2Fdocker.sock/v1.30/version: dial unix /var/run/docker.sock: connect: permission denied` please ensure you ran the command with `sudo` prepended
 
 You have now accessed each type of VM used in today's lab.
 
