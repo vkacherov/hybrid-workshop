@@ -78,6 +78,26 @@ installUCP() {
     echo "installUCP: Cluster's healthcheck returned a ready state"
     echo "installUCP: Finished installing Docker Universal Control Plane (UCP)"
 
+    configureUCP
+
+}
+
+configureUCP() {
+
+    echo "configureUCP: Modifying UCP configuration"
+    echo "configureUCP: Disabling container scheduling on UCP managers"
+
+    # Get the auth token
+    TOKEN=$(curl --insecure "https://$UCP_FQDN:443/auth/login" -d "{\"username\": \"$UCP_ADMIN\", \"password\": \"$UCP_PASSWORD\"}" -X POST -s | jq -r ".auth_token")
+
+    # Get the docker-datacenter Org ID
+    ORG_ID=$(curl --insecure -s -H "Authorization: Bearer ${TOKEN}" -X GET https://$UCP_FQDN/accounts/docker-datacenter | jq -r ".id")
+
+    # Delete the org's scheduler grant:
+    curl --insecure -s -H "Authorization: Bearer ${TOKEN}" -X DELETE https://$UCP_FQDN/collectionGrants/$ORG_ID/swarm/scheduler
+
+    echo "configureUCP: Disabled container scheduling on UCP managers"
+    
 }
 
 joinUCP() {
