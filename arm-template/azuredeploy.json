@@ -37,7 +37,7 @@
       "defaultValue": {
         "engine": {
           "linux": "stable-17.06",
-          "windows": "17.06.2-ee-8"
+          "windows": "17.06.2-ee-10"
         },
         "ucp": "latest",
         "dtr": "latest"
