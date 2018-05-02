@@ -37,6 +37,10 @@ installEngine() {
   # redirect to abyss via https://askubuntu.com/a/258226
   sudo apt-get -qq install docker-ee > /dev/null
 
+  # Add eeadmin to Docker Group
+  sudo groupadd docker
+  sudo usermod -aG docker eeadmin
+
   # Finished
   echo "Finished installing Docker EE Engine"
 
