@@ -873,6 +873,8 @@ Click on `java-web-published` to the the details of the public load balancer cre
 
 There will be a link for the public url where the service on port 8080 is exposed. Click on that link, add `/java-web/` at the end of the url. You should be led to the running application.
 
+> If the port in the URL is not `8080`, for example `33871`, then the Azure Load Balancer named `apps` needs to be re-configured. [Create a probe](https://docs.microsoft.com/en-us/azure/load-balancer/tutorial-load-balancer-standard-public-zonal-portal#create-a-health-probe) and [load balancer rule](https://docs.microsoft.com/en-us/azure/load-balancer/tutorial-load-balancer-standard-public-zonal-portal#create-a-load-balancer-rule) for the given port to allow traffic into the cluster on the designated port.
+
 ![](./images/kube-running-app.png)
 
 ## <a name="task5"></a>Task 5: Security Scanning
@@ -885,7 +887,7 @@ Security is crucial for all organizations. And it is a complicated topic, too in
 
 	This will take awhile so you may want to take a break by reading up on [Docker Security](https://www.docker.com/docker-security).
 
-2. Once the scanning database has downloaded, you can scan individual images. Select a repository, such as `java/java_web`, and then select the `Images` tab. If it hasn't already scanned, select `Start scan`. If it hasn't scanned already, this can take 5-10 minutes or so.
+1. Once the scanning database has downloaded, you can scan individual images. Select a repository, such as `java/java_web`, and then select the `Images` tab. If it hasn't already scanned, select `Start scan`. If it hasn't scanned already, this can take 5-10 minutes or so.
 
 	![](./images/java-scanned.png)
 
@@ -897,7 +899,7 @@ Security is crucial for all organizations. And it is a complicated topic, too in
 
  	![](./images/cves.png)
 
- 3. One way you can reduce your vulnerabilities is to choose newer images. For instance, you can go back to the Dockerfile in the `~/hybrid-app/java-app` directory, and change the second base image to `tomcat:9.0.6-jre-9-slim`. Slim images in official images are generally based on lighter-weight operating systems like `Alpine Linux` or `Debian`, which have reduced attack space. You can change the Dockerfile using `vim` or `emacs`.
+ 1. One way you can reduce your vulnerabilities is to choose newer images. For instance, you can go back to the Dockerfile in the `~/hybrid-app/java-app` directory, and change the second base image to `tomcat:9.0.6-jre-9-slim`. Slim images in official images are generally based on lighter-weight operating systems like `Alpine Linux` or `Debian`, which have reduced attack space. You can change the Dockerfile using `vim` or `emacs`.
 
 	![](./images/tomcat9.png)
 
@@ -907,13 +909,13 @@ Security is crucial for all organizations. And it is a complicated topic, too in
 
 	You'll still see vulnerabilites, but far fewer.
 
-4. If you look at the components of the `tomcat:9.0.6-jre-9-slim` image, you will see that the critical and major vulnerabilities were brought in the `Spring` libraries. So maybe it's time to upgrade our app! 
+1. If you look at the components of the `tomcat:9.0.6-jre-9-slim` image, you will see that the critical and major vulnerabilities were brought in the `Spring` libraries. So maybe it's time to upgrade our app! 
 
 	![](./images/tomcat9-components.png)
 
 	Upgrading the app is out of scope for this workshop, but you can see how it would give you the information you need to mitigate vulnerabilities.
 
-5. DTR also allows you to [Sign Images](https://docs.docker.com/datacenter/dtr/2.4/guides/user/manage-images/sign-images/) and [Create promotion policies](https://docs.docker.com/datacenter/dtr/2.4/guides/user/create-promotion-policies/) which prevent users from using images in production that don't meet whatever criteria you set, including blocking images with critical and/or major vulnerabilities.
+1. DTR also allows you to [Sign Images](https://docs.docker.com/datacenter/dtr/2.4/guides/user/manage-images/sign-images/) and [Create promotion policies](https://docs.docker.com/datacenter/dtr/2.4/guides/user/create-promotion-policies/) which prevent users from using images in production that don't meet whatever criteria you set, including blocking images with critical and/or major vulnerabilities.
 
 ## Common Issues
 
@@ -930,6 +932,8 @@ Security is crucial for all organizations. And it is a complicated topic, too in
 * The hostname routing feature of Docker EE's Interlock 2.0 system typically allow you to use a DNS name rather than a port number to load applications. However, this requires additonal setup not done for the lab - setting up a DNS Wildcard entry pointing at the apps load balancer.
 
 * This lab provisions a highly-available cluster of 10 virtual machine nodes. Azure Subscriptions container a quota of number of VM cores; if you hit an error during template deployment related to cores quota please remove VMs from other resource groups. This lab has not been tested on other sized Docker EE clusters.
+
+* If an application is not accessible over a particular port, ensure that containers were not scheduled on a UCP manager node. Easiest way to confirm is to open **Admin Settings** -> **Scheduler** and disable the boxes for `Allow administrators to deploy containers on UCP managers or nodes running DTR` and `Allow users to schedule on all nodes, including UCP managers and DTR nodes`.
 
 ## Conclusion
 
