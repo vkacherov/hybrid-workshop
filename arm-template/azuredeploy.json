@@ -12,7 +12,7 @@
         "dtr": 3,
         "workers": {
           "linux": 2,
-          "windows": 0
+          "windows": 2
         }
       }
     },
