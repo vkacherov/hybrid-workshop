@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "dockerEEURL": {
+      "value": "https://storebits.docker.com/ee/linux/sub-00000000-0000-0000-0000-000000000000"
+    },
+    "instances": {
+      "value": {
+        "managers": 3,
+        "dtr": 3,
+        "workers": {
+          "linux": 2,
+          "windows": 2
+        }
+      }
+    }
+  }
+}
